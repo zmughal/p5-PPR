@@ -1,31 +1,31 @@
-package PPR;
+package PPR::X;
 
 use 5.010;
 BEGIN {
     if ($] >= 5.020 && $] <= 5.021) {
         say {STDERR} <<"        END_WARNING"
-        Warning: This program is running under Perl $^V and uses the PPR module.
+        Warning: This program is running under Perl $^V and uses the PPR::X module.
                  Due to an unresolved issue with compilation of large regexes
                  in this version of Perl, your code is likely to compile
                  extremely slowly (i.e. it may take more than a minute).
-                 PPR is being loaded at ${\join ' line ', (caller 2)[1,2]}.
+                 PPR::X is being loaded at ${\join ' line ', (caller 2)[1,2]}.
         END_WARNING
     }
 }
 use warnings;
-our $VERSION = '0.000005';
+our $VERSION = '0.000004';
 use utf8;
 
 # Define the grammar...
 our $GRAMMAR = qr{
 (?(DEFINE)
 
-    (?<PerlDocument>
+    (?<PerlDocument>   (?<PerlStdDocument>
             (?>(?&PerlOWS))
         (?: (?>(?&PerlStatement)) (?&PerlOWS) )*+
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlStatement>
+    (?<PerlStatement>   (?<PerlStdStatement>
             (?: (?>(?&PerlPod))   (?&PerlOWS) )?+
         (?>
             (?: (?>(?&PerlLabel)) (?&PerlOWS) )?+
@@ -92,9 +92,9 @@ our $GRAMMAR = qr{
         | # Just an empty statement...
             (?>(?&PerlOWS)) ;
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlSubroutineDeclaration>
+    (?<PerlSubroutineDeclaration>   (?<PerlStdSubroutineDeclaration>
        (?>
            sub \b                             (?>(?&PerlOWS))
            (?>(?&PerlOldQualifiedIdentifier))    (?&PerlOWS)
@@ -112,9 +112,9 @@ our $GRAMMAR = qr{
        )?+
        (?: (?>(?&PerlAttributes))     (?&PerlOWS)  )?+
        (?> ; | (?&PerlBlock) )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlUseStatement>
+    (?<PerlUseStatement>   (?<PerlStdUseStatement>
        (?: use | no ) (?>(?&PerlNWS))
        (?>
            (?&PerlVersionNumber)
@@ -127,65 +127,65 @@ our $GRAMMAR = qr{
            (?: (?>(?&PerlOWS)) (?&PerlExpression) )?+
        )
        (?>(?&PerlOWS)) (?> ; | (?= \} | \s* \z ))
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlReturnStatement>
+    (?<PerlReturnStatement>   (?<PerlStdReturnStatement>
        return \b (?: (?>(?&PerlOWS)) (?&PerlExpression) )?+
        (?>(?&PerlOWS)) (?> ; | (?= \} | \s* \z ))
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlPackageDeclaration>
+    (?<PerlPackageDeclaration>   (?<PerlStdPackageDeclaration>
        package
            (?>(?&PerlNWS)) (?>(?&PerlQualifiedIdentifier))
        (?: (?>(?&PerlNWS)) (?&PerlVersionNumber) )?+
            (?>(?&PerlOWS)) (?> ; | (?&PerlBlock) | (?= \} | \s* \z ))
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlExpression>
+    (?<PerlExpression>   (?<PerlStdExpression>
                             (?>(?&PerlLowPrecedenceNotExpression))
         (?: (?>(?&PerlOWS)) (?>(?&PerlLowPrecedenceInfixOperator))
             (?>(?&PerlOWS))    (?&PerlLowPrecedenceNotExpression)  )*+
-    ) # End of rule
+    )) # End of rule
 
 
-    (?<PerlLowPrecedenceNotExpression>
+    (?<PerlLowPrecedenceNotExpression>   (?<PerlStdLowPrecedenceNotExpression>
         (?: not \b (?&PerlOWS) )*+  (?&PerlCommaList)
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlCommaList>
+    (?<PerlCommaList>   (?<PerlStdCommaList>
                 (?>(?&PerlAssignment))  (?>(?&PerlOWS))
         (?:
             (?: (?>(?&PerlComma))          (?&PerlOWS)   )++
                 (?>(?&PerlAssignment))  (?>(?&PerlOWS))
         )*+
             (?: (?>(?&PerlComma))          (?&PerlOWS)   )*+
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlAssignment>
+    (?<PerlAssignment>   (?<PerlStdAssignment>
                             (?>(?&PerlConditionalExpression))
         (?:
             (?>(?&PerlOWS)) (?>(?&PerlAssignmentOperator))
             (?>(?&PerlOWS))    (?&PerlConditionalExpression)
         )*+
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlScalarExpr>
-    (?<PerlConditionalExpression>
+    (?<PerlScalarExpr>   (?<PerlStdScalarExpr>
+    (?<PerlConditionalExpression>   (?<PerlStdConditionalExpression>
         (?>(?&PerlBinaryExpression))
         (?:
             (?>(?&PerlOWS)) \? (?>(?&PerlOWS)) (?>(?&PerlAssignment))
             (?>(?&PerlOWS))  : (?>(?&PerlOWS))    (?&PerlConditionalExpression)
         )?+
-    ) # End of rule
-    ) # End of rule
+    )) # End of rule
+    )) # End of rule
 
-    (?<PerlBinaryExpression>
+    (?<PerlBinaryExpression>   (?<PerlStdBinaryExpression>
                             (?>(?&PerlPrefixPostfixTerm))
         (?: (?>(?&PerlOWS)) (?>(?&PerlInfixBinaryOperator))
             (?>(?&PerlOWS))    (?&PerlPrefixPostfixTerm) )*+
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlPrefixPostfixTerm>
+    (?<PerlPrefixPostfixTerm>   (?<PerlStdPrefixPostfixTerm>
         (?: (?>(?&PerlPrefixUnaryOperator))  (?&PerlOWS) )*+
         (?>(?&PerlTerm))
         (?:
@@ -219,9 +219,9 @@ our $GRAMMAR = qr{
             )?+
         )?+
         (?: (?>(?&PerlOWS)) (?&PerlPostfixUnaryOperator) )?+
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlLvalue>
+    (?<PerlLvalue>   (?<PerlStdLvalue>
         (?>
             \\?+ [\$\@%] (?>(?&PerlOWS)) (?&PerlIdentifier)
         |
@@ -234,9 +234,9 @@ our $GRAMMAR = qr{
                 (?: (?>(?&PerlComma)) (?&PerlOWS) )?+
             \)
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlTerm>
+    (?<PerlTerm>   (?<PerlStdTerm>
         (?>
             # Inlined (?&PerlReturnStatement)...
             return \b (?>(?&PerlOWS)) (?&PerlExpression)
@@ -286,9 +286,9 @@ our $GRAMMAR = qr{
         |
             (?&PerlLiteral)
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlControlBlock>
+    (?<PerlControlBlock>   (?<PerlStdControlBlock>
         (?> # Conditionals...
             (?> if | unless ) \b            (?>(?&PerlOWS))
             (?>(?&PerlParenthesesList))          (?>(?&PerlOWS))
@@ -323,7 +323,7 @@ our $GRAMMAR = qr{
                     (?>(?&PerlOWS))
                     (?> (?&PerlParenthesesList) | (?&PerlQuotelikeQW) )
                 |
-                    (?&PPR_three_part_list)
+                    (?&PPR_X_three_part_list)
                 )
             |
                 (?> while | until) \b (?>(?&PerlOWS))
@@ -350,31 +350,31 @@ our $GRAMMAR = qr{
             default                                           (?>(?&PerlOWS))
             (?&PerlBlock)
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlFormat>
+    (?<PerlFormat>   (?<PerlStdFormat>
         format
         (?: (?>(?&PerlNWS))  (?&PerlQualifiedIdentifier)  )?+
             (?>(?&PerlOWS))  = [^\n]*+                \n
         (?:                    [^\n]*+                \n  )*?
                                \.                     \n
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlStatementModifier>
+    (?<PerlStatementModifier>   (?<PerlStdStatementModifier>
         (?> if | for(?:each)?+ | while | unless | until | when )
         \b
         (?>(?&PerlOWS))
         (?&PerlExpression)
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlBlock>
+    (?<PerlBlock>   (?<PerlStdBlock>
         \{                             (?>(?&PerlOWS))
             (?: (?>(?&PerlStatement))     (?&PerlOWS)   )*+
             (?: (?>(?&PerlPod))           (?&PerlOWS)   )?+
         \}
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlCall>
+    (?<PerlCall>   (?<PerlStdCall>
         (?>
             [&]                                    (?>(?&PerlOWS))
             (?> (?&PerlBlock)
@@ -387,14 +387,14 @@ our $GRAMMAR = qr{
                 \)
             )?+
         |
-            - (?>(?&PPR_filetest_name))            (?>(?&PerlOWS))
+            - (?>(?&PPR_X_filetest_name))            (?>(?&PerlOWS))
             (?&PerlPrefixPostfixTerm)?+
         |
             (?>(?&PerlBuiltinFunction))            (?>(?&PerlOWS))
             (?>
                 \(                                 (?>(?&PerlOWS))
                     (?>
-                        (?= (?>(?&PPR_non_reserved_identifier))
+                        (?= (?>(?&PPR_X_non_reserved_identifier))
                             (?>(?&PerlOWS))
                             (?! \( | (?&PerlComma) )
                         )
@@ -403,7 +403,7 @@ our $GRAMMAR = qr{
                         (?>(?&PerlBlock))          (?>(?&PerlOWS))
                         (?&PerlExpression)?+
                     |
-                        (?>(?&PPR_indirect_obj))   (?>(?&PerlNWS))
+                        (?>(?&PPR_X_indirect_obj))   (?>(?&PerlNWS))
                         (?&PerlExpression)
                     |
                         (?&PerlExpression)?+
@@ -412,7 +412,7 @@ our $GRAMMAR = qr{
             |
                     (?>
                         (?=
-                            (?>(?&PPR_non_reserved_identifier))
+                            (?>(?&PPR_X_non_reserved_identifier))
                             (?>(?&PerlOWS))
                             (?! \( | (?&PerlComma) )
                         )
@@ -421,14 +421,14 @@ our $GRAMMAR = qr{
                         (?>(?&PerlBlock))          (?>(?&PerlOWS))
                         (?&PerlCommaList)?+
                     |
-                        (?>(?&PPR_indirect_obj))   (?>(?&PerlNWS))
+                        (?>(?&PPR_X_indirect_obj))   (?>(?&PerlNWS))
                         (?&PerlCommaList)
                     |
                         (?&PerlCommaList)?+
                     )
             )
         |
-            (?>(?&PPR_non_reserved_identifier)) (?>(?&PerlOWS))
+            (?>(?&PPR_X_non_reserved_identifier)) (?>(?&PerlOWS))
             (?>
                 \(                              (?>(?&PerlOWS))
                     (?: (?>(?&PerlExpression))     (?&PerlOWS)  )?+
@@ -436,7 +436,7 @@ our $GRAMMAR = qr{
             |
                     (?>
                         (?=
-                            (?>(?&PPR_non_reserved_identifier))
+                            (?>(?&PPR_X_non_reserved_identifier))
                             (?>(?&PerlOWS))
                             (?! \( | (?&PerlComma) )
                         )
@@ -445,78 +445,78 @@ our $GRAMMAR = qr{
                         (?>(?&PerlBlock))           (?>(?&PerlOWS))
                         (?&PerlCommaList)?+
                     |
-                        (?>(?&PPR_indirect_obj))        (?&PerlNWS)
+                        (?>(?&PPR_X_indirect_obj))        (?&PerlNWS)
                         (?&PerlCommaList)
                     |
                         (?&PerlCommaList)?+
                     )
             )
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlVariableDeclaration>
+    (?<PerlVariableDeclaration>   (?<PerlStdVariableDeclaration>
         (?> my | state | our ) \b           (?>(?&PerlOWS))
         (?: (?&PerlQualifiedIdentifier)        (?&PerlOWS)  )?+
         (?>(?&PerlLvalue))                  (?>(?&PerlOWS))
         (?&PerlAttributes)?+
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlDoBlock>
+    (?<PerlDoBlock>   (?<PerlStdDoBlock>
         do (?>(?&PerlOWS)) (?&PerlBlock)
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlEvalBlock>
+    (?<PerlEvalBlock>   (?<PerlStdEvalBlock>
         eval (?>(?&PerlOWS)) (?&PerlBlock)
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlAttributes>
+    (?<PerlAttributes>   (?<PerlStdAttributes>
         :
         (?>(?&PerlOWS))
         (?>(?&PerlIdentifier))
         (?:
-            (?= \( ) (?&PPR_quotelike_body)
+            (?= \( ) (?&PPR_X_quotelike_body)
         )?+
 
         (?:
             (?> (?>(?&PerlOWS)) : (?&PerlOWS) | (?&PerlNWS) )
             (?>(?&PerlIdentifier))
             (?:
-                (?= \( ) (?&PPR_quotelike_body)
+                (?= \( ) (?&PPR_X_quotelike_body)
             )?+
         )*+
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlList>
+    (?<PerlList>   (?<PerlStdList>
         (?> (?&PerlParenthesesList) | (?&PerlCommaList) )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlParenthesesList>
+    (?<PerlParenthesesList>   (?<PerlStdParenthesesList>
         \(  (?>(?&PerlOWS))  (?: (?>(?&PerlExpression)) (?&PerlOWS) )?+  \)
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlAnonymousArray>
+    (?<PerlAnonymousArray>   (?<PerlStdAnonymousArray>
         \[  (?>(?&PerlOWS))  (?: (?>(?&PerlExpression)) (?&PerlOWS) )?+  \]
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlAnonymousHash>
+    (?<PerlAnonymousHash>   (?<PerlStdAnonymousHash>
         \{  (?>(?&PerlOWS))  (?: (?>(?&PerlExpression)) (?&PerlOWS) )?+ \}
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlArrayIndexer>
+    (?<PerlArrayIndexer>   (?<PerlStdArrayIndexer>
         \[                          (?>(?&PerlOWS))
             (?>(?&PerlExpression))  (?>(?&PerlOWS))
         \]
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlHashIndexer>
+    (?<PerlHashIndexer>   (?<PerlStdHashIndexer>
         \{  (?>(?&PerlOWS))
             (?: -?+ (?&PerlIdentifier) | (?&PerlExpression) )  # (Note: MUST allow backtracking here)
             (?>(?&PerlOWS))
         \}
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlDiamondOperator>
-        <  (?>(?&PPR_balanced_angles))  >
+    (?<PerlDiamondOperator>   (?<PerlStdDiamondOperator>
+        <  (?>(?&PPR_X_balanced_angles))  >
         (?=
             (?>(?&PerlOWS))
             (?> \z | [,;\}\])?] | => | : (?! :)        # (
@@ -524,21 +524,21 @@ our $GRAMMAR = qr{
             |   for(?:each)?+ | while | if | unless | until | when
             )
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlComma>
+    (?<PerlComma>   (?<PerlStdComma>
         (?> , | => )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlPrefixUnaryOperator>
-        (?> \+\+  |  --  |  !  |  ~  |  \\  |  \+  |  - (?! (?&PPR_filetest_name) \b ) )
-    ) # End of rule
+    (?<PerlPrefixUnaryOperator>   (?<PerlStdPrefixUnaryOperator>
+        (?> \+\+  |  --  |  !  |  ~  |  \\  |  \+  |  - (?! (?&PPR_X_filetest_name) \b ) )
+    )) # End of rule
 
-    (?<PerlPostfixUnaryOperator>
+    (?<PerlPostfixUnaryOperator>   (?<PerlStdPostfixUnaryOperator>
         (?> \+\+  |  -- )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlInfixBinaryOperator>
+    (?<PerlInfixBinaryOperator>   (?<PerlStdInfixBinaryOperator>
         (?>  [=!][~=]
         |    cmp
         |    <= >?+
@@ -555,22 +555,22 @@ our $GRAMMAR = qr{
         |    \^              (?! [=]  )
         |    ~~
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlAssignmentOperator>
+    (?<PerlAssignmentOperator>   (?<PerlStdAssignmentOperator>
         (?:  [<>*&|/]{2}
           |  [-+.*/%x]
           |  [&|^][.]?+
         )?+
         =
         (?! > )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlLowPrecedenceInfixOperator>
+    (?<PerlLowPrecedenceInfixOperator>   (?<PerlStdLowPrecedenceInfixOperator>
         (?> or | and | xor )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlAnonymousSubroutine>
+    (?<PerlAnonymousSubroutine>   (?<PerlStdAnonymousSubroutine>
         sub \b
         (?>(?&PerlOWS))
         (?:
@@ -583,18 +583,18 @@ our $GRAMMAR = qr{
         )?+
         (?: (?>(?&PerlAttributes))  (?&PerlOWS) )?+
         (?&PerlBlock)
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlVariable>
+    (?<PerlVariable>   (?<PerlStdVariable>
         (?= [\$\@%] )
         (?>
             (?&PerlScalarAccess)
         |   (?&PerlHashAccess)
         |   (?&PerlArrayAccess)
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlTypeglob>
+    (?<PerlTypeglob>   (?<PerlStdTypeglob>
         \*
         (?>
             \d++
@@ -620,9 +620,9 @@ our $GRAMMAR = qr{
             [\@%]
             (?> (?&PerlArrayIndexer) | (?&PerlHashIndexer) )
         )?+
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlArrayAccess>
+    (?<PerlArrayAccess>   (?<PerlStdArrayAccess>
         (?>(?&PerlVariableArray))
         (?:
             (?>(?&PerlOWS)) (?: -> (?&PerlOWS) )?+
@@ -633,9 +633,9 @@ our $GRAMMAR = qr{
             [\@%]
             (?> (?&PerlArrayIndexer) | (?&PerlHashIndexer) )
         )?+
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlHashAccess>
+    (?<PerlHashAccess>   (?<PerlStdHashAccess>
         (?>(?&PerlVariableHash))
         (?:
             (?>(?&PerlOWS)) (?: -> (?&PerlOWS) )?+
@@ -646,9 +646,9 @@ our $GRAMMAR = qr{
             [\@%]
             (?> (?&PerlArrayIndexer) | (?&PerlHashIndexer) )
         )?+
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlScalarAccess>
+    (?<PerlScalarAccess>   (?<PerlStdScalarAccess>
         (?>(?&PerlVariableScalar))
         (?:
             (?>(?&PerlOWS))
@@ -671,9 +671,9 @@ our $GRAMMAR = qr{
                 (?> (?&PerlArrayIndexer) | (?&PerlHashIndexer) )
             )?+
         )?+
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlVariableScalar>
+    (?<PerlVariableScalar>   (?<PerlStdVariableScalar>
         \$\$
         (?! [\$\{\w] )
     |
@@ -704,9 +704,9 @@ our $GRAMMAR = qr{
         )
     |
         \$\#
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlVariableArray>
+    (?<PerlVariableArray>   (?<PerlStdVariableArray>
         \@     (?>(?&PerlOWS))
         (?: \$    (?&PerlOWS)  )*+
         (?>
@@ -724,9 +724,9 @@ our $GRAMMAR = qr{
         |
             (?&PerlBlock)
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlVariableHash>
+    (?<PerlVariableHash>   (?<PerlStdVariableHash>
         %      (?>(?&PerlOWS))
         (?: \$    (?&PerlOWS)  )*+
         (?>
@@ -744,24 +744,24 @@ our $GRAMMAR = qr{
         |
             (?&PerlBlock)
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlLabel>
+    (?<PerlLabel>   (?<PerlStdLabel>
         (?! (?> [msy] | q[wrxq]? | tr ) \b )
         (?>(?&PerlIdentifier))
         : (?! : )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlLiteral>
+    (?<PerlLiteral>   (?<PerlStdLiteral>
         (?> (?&PerlString)
         |   (?&PerlQuotelikeQR)
         |   (?&PerlQuotelikeQW)
         |   (?&PerlNumber)
         |   (?&PerlBareword)
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlString>
+    (?<PerlString>   (?<PerlStdString>
         (?>
             "  [^"\\]*+  (?: \\. [^"\\]*+ )*+ "
         |
@@ -769,15 +769,15 @@ our $GRAMMAR = qr{
         |
             qq? \b
             (?> (?= [#] ) | (?! (?>(?&PerlOWS)) => ) )
-            (?&PPR_quotelike_body)
+            (?&PPR_X_quotelike_body)
         |
             (?&PerlHeredoc)
         |
             (?&PerlVString)
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlQuotelike>
+    (?<PerlQuotelike>   (?<PerlStdQuotelike>
         (?> (?&PerlString)
         |   (?&PerlQuotelikeQR)
         |   (?&PerlQuotelikeQW)
@@ -786,11 +786,11 @@ our $GRAMMAR = qr{
         |   (?&PerlQuotelikeS)
         |   (?&PerlQuotelikeTR)
     )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlHeredoc>
-        (?{ %PPR::_heredoc_skip = () if !$PPR::_heredoc_setup;
-            local $PPR::_heredoc_setup = 1;
+    (?<PerlHeredoc>   (?<PerlStdHeredoc>
+        (?{ %PPR::X::_heredoc_skip = () if !$PPR::X::_heredoc_setup;
+            local $PPR::X::_heredoc_setup = 1;
         })
         <<
         (?<_heredoc_indented> [~]?+ )
@@ -812,7 +812,7 @@ our $GRAMMAR = qr{
         # Lookahead to detect and remember trailing contents of heredoc
         (?=
             [^\n]*+ \n                                          # Go to end of line
-            (?: (??{ $PPR::_heredoc_skip{+pos()} // q{} }) )++  # Skip earlier heredoc contents
+            (?: (??{ $PPR::X::_heredoc_skip{+pos()} // q{} }) )++  # Skip earlier heredoc contents
             (?{ +pos() })                                       # Remember the start location
             (?<_heredoc_contents>                               # The heredoc contents consist of...
                 (?: [^\n]*+ \n )*?                              #     A minimal number of lines
@@ -822,99 +822,99 @@ our $GRAMMAR = qr{
             )
 
             # Then memoize the skip for when it's subsequently needed by PerlOWS or PerlNWS...
-            (?{ $PPR::_heredoc_skip{$^R} = "(?s:.\{" . length($+{_heredoc_contents}) . "\})"; })
+            (?{ $PPR::X::_heredoc_skip{$^R} = "(?s:.\{" . length($+{_heredoc_contents}) . "\})"; })
         )
 
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlQuotelikeQ>
+    (?<PerlQuotelikeQ>   (?<PerlStdQuotelikeQ>
         (?>
             '  [^'\\]*+  (?: \\. [^'\\]*+ )*+ '
         |
             q \b
             (?> (?= [#] ) | (?! (?>(?&PerlOWS)) => ) )
-            (?&PPR_quotelike_body)
+            (?&PPR_X_quotelike_body)
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlQuotelikeQQ>
+    (?<PerlQuotelikeQQ>   (?<PerlStdQuotelikeQQ>
         (?>
             "  [^"\\]*+  (?: \\. [^"\\]*+ )*+ "
         |
             qq \b
             (?> (?= [#] ) | (?! (?>(?&PerlOWS)) => ) )
-            (?&PPR_quotelike_body)
+            (?&PPR_X_quotelike_body)
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlQuotelikeQW>
+    (?<PerlQuotelikeQW>   (?<PerlStdQuotelikeQW>
         (?>
             qw \b
             (?> (?= [#] ) | (?! (?>(?&PerlOWS)) => ) )
-            (?&PPR_quotelike_body)
+            (?&PPR_X_quotelike_body)
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlQuotelikeQX>
+    (?<PerlQuotelikeQX>   (?<PerlStdQuotelikeQX>
         (?>
             `  [^`]*+  (?: \\. [^`]*+ )*+  `
         |
             qx \b
             (?> (?= [#] ) | (?! (?>(?&PerlOWS)) => ) )
-            (?&PPR_quotelike_body)
+            (?&PPR_X_quotelike_body)
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlQuotelikeS>
-    (?<PerlSubstitution>
+    (?<PerlQuotelikeS>   (?<PerlStdQuotelikeS>
+    (?<PerlSubstitution>   (?<PerlStdSubstitution>
         s \b
         (?> (?= [#] ) | (?! (?>(?&PerlOWS)) => ) )
         (?>
             # Hashed syntax...
             (?= [#] )
-            (?>(?&PPR_quotelike_body_unclosed))
-               (?&PPR_quotelike_body)
+            (?>(?&PPR_X_quotelike_body_unclosed))
+               (?&PPR_X_quotelike_body)
         |
             # Bracketed syntax...
             (?= (?>(?&PerlOWS)) [\[(<\{] )      # )
-            (?>(?&PPR_quotelike_body))
+            (?>(?&PPR_X_quotelike_body))
             (?>(?&PerlOWS))
-               (?&PPR_quotelike_body)
+               (?&PPR_X_quotelike_body)
         |
             # Delimited syntax...
-            (?>(?&PPR_quotelike_body_unclosed))
-               (?&PPR_quotelike_body)
+            (?>(?&PPR_X_quotelike_body_unclosed))
+               (?&PPR_X_quotelike_body)
         )
         [msixpodualgcer]*+
-    ) # End of rule
-    ) # End of rule
+    )) # End of rule
+    )) # End of rule
 
-    (?<PerlQuotelikeTR>
-    (?<PerlTransliteration>
+    (?<PerlQuotelikeTR>   (?<PerlStdQuotelikeTR>
+    (?<PerlTransliteration>   (?<PerlStdTransliteration>
         (?> tr | y ) \b
         (?! (?>(?&PerlOWS)) => )
         (?>
             # Hashed syntax...
             (?= [#] )
-            (?>(?&PPR_quotelike_body_unclosed))
-               (?&PPR_quotelike_body)
+            (?>(?&PPR_X_quotelike_body_unclosed))
+               (?&PPR_X_quotelike_body)
         |
             # Bracketed syntax...
             (?= (?>(?&PerlOWS)) [\[(<\{] )      # )
-            (?>(?&PPR_quotelike_body))
+            (?>(?&PPR_X_quotelike_body))
             (?>(?&PerlOWS))
-               (?&PPR_quotelike_body)
+               (?&PPR_X_quotelike_body)
         |
             # Delimited syntax...
-            (?>(?&PPR_quotelike_body_unclosed))
-               (?&PPR_quotelike_body)
+            (?>(?&PPR_X_quotelike_body_unclosed))
+               (?&PPR_X_quotelike_body)
         )
         [cdsr]*+
-    ) # End of rule
-    ) # End of rule
+    )) # End of rule
+    )) # End of rule
 
-    (?<PerlContextualQuotelikeM>
-    (?<PerlContextualMatch>
+    (?<PerlContextualQuotelikeM>   (?<PerlStdContextualQuotelikeM>
+    (?<PerlContextualMatch>   (?<PerlStdContextualMatch>
         (?<PerlQuotelikeM>
         (?<PerlMatch>
             (?>
@@ -928,7 +928,7 @@ our $GRAMMAR = qr{
                 |
                     (?= \/ [^/] )
                 )
-                (?&PPR_quotelike_body)
+                (?&PPR_X_quotelike_body)
             )
             [msixpodualgc]*+
         ) # End of rule
@@ -940,34 +940,34 @@ our $GRAMMAR = qr{
             |   for(?:each)?+ | while | if | unless | until | when
             )
         )
-    ) # End of rule
-    ) # End of rule
+    )) # End of rule
+    )) # End of rule
 
-    (?<PerlQuotelikeQR>
+    (?<PerlQuotelikeQR>   (?<PerlStdQuotelikeQR>
         qr \b
         (?> (?= [#] ) | (?! (?>(?&PerlOWS)) => ) )
-        (?>(?&PPR_quotelike_body))
+        (?>(?&PPR_X_quotelike_body))
         [msixpodual]*+
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlRegex>
+    (?<PerlRegex>   (?<PerlStdRegex>
         (?>
             (?&PerlMatch)
         |
             (?&PerlQuotelikeQR)
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlContextualRegex>
+    (?<PerlContextualRegex>   (?<PerlStdContextualRegex>
         (?>
             (?&PerlContextualMatch)
         |
             (?&PerlQuotelikeQR)
         )
-    ) # End of rule
+    )) # End of rule
 
 
-    (?<PerlBuiltinFunction>
+    (?<PerlBuiltinFunction>   (?<PerlStdBuiltinFunction>
         # Optimized to match any Perl builtin name, without backtracking...
         (?>
              s(?>e(?>t(?>(?>(?>(?>hos|ne)t|gr)en|s(?>erven|ockop))t|p(?>r(?>iority|otoent)|went|grp))|m(?>ctl|get|op)|ek(?>dir)?|lect|nd)|y(?>s(?>write|call|open|read|seek|tem)|mlink)|h(?>m(?>write|read|ctl|get)|utdown|ift)|o(?>cket(?>pair)?|rt)|p(?>li(?>ce|t)|rintf)|(?>cala|ubst)r|t(?>ate?|udy)|leep|rand|qrt|ay|in)
@@ -996,9 +996,9 @@ our $GRAMMAR = qr{
             | _
         )
         \b
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlNullaryBuiltinFunction>
+    (?<PerlNullaryBuiltinFunction>   (?<PerlStdNullaryBuiltinFunction>
         # Optimized to match any Perl builtin name, without backtracking...
         (?>
               get(?:(?:(?:hos|ne)t|serv|gr)ent|p(?:(?:roto|w)ent|pid)|login)
@@ -1009,55 +1009,55 @@ our $GRAMMAR = qr{
             | _
         )
         \b
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlVersionNumber>
+    (?<PerlVersionNumber>   (?<PerlStdVersionNumber>
         (?>
             (?&PerlVString)
         |
-            (?>(?&PPR_digit_seq))
-            (?: \. (?&PPR_digit_seq)?+ )*+
+            (?>(?&PPR_X_digit_seq))
+            (?: \. (?&PPR_X_digit_seq)?+ )*+
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlVString>
-        v  (?>(?&PPR_digit_seq))  (?: \. (?&PPR_digit_seq) )*+
-    ) # End of rule
+    (?<PerlVString>   (?<PerlStdVString>
+        v  (?>(?&PPR_X_digit_seq))  (?: \. (?&PPR_X_digit_seq) )*+
+    )) # End of rule
 
-    (?<PerlNumber>
+    (?<PerlNumber>   (?<PerlStdNumber>
         [+-]?+
         (?>
-            0  (?>  x (?&PPR_x_digit_seq)
-               |    b (?&PPR_b_digit_seq)
-               |      (?&PPR_o_digit_seq)
+            0  (?>  x (?&PPR_X_x_digit_seq)
+               |    b (?&PPR_X_b_digit_seq)
+               |      (?&PPR_X_o_digit_seq)
                )
         |
             (?>
-                    (?>(?&PPR_digit_seq))
-                (?: \. (?&PPR_digit_seq)?+ )?+
+                    (?>(?&PPR_X_digit_seq))
+                (?: \. (?&PPR_X_digit_seq)?+ )?+
             |
-                    \. (?&PPR_digit_seq)
+                    \. (?&PPR_X_digit_seq)
             )
-            (?: [eE] [+-]?+ (?&PPR_digit_seq) )?+
+            (?: [eE] [+-]?+ (?&PPR_X_digit_seq) )?+
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlOldQualifiedIdentifier>
+    (?<PerlOldQualifiedIdentifier>   (?<PerlStdOldQualifiedIdentifier>
         (?> (?> :: | ' ) \w++  |  [^\W\d]\w*+ )  (?: (?> :: | ' )  \w++ )*+
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlQualifiedIdentifier>
+    (?<PerlQualifiedIdentifier>   (?<PerlStdQualifiedIdentifier>
         (?>     ::       \w++  |  [^\W\d]\w*+ )  (?: (?> :: | ' )  \w++ )*+
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlIdentifier>
+    (?<PerlIdentifier>   (?<PerlStdIdentifier>
                                   [^\W\d]\w*+
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlBareword>
+    (?<PerlBareword>   (?<PerlStdBareword>
         (?! (?> for(?:each)?+ | while | if | unless | until | use | no
             |   given | when | sub | return
-            |   (?&PPR_named_op)
+            |   (?&PPR_X_named_op)
             |   __ (?> END | DATA ) __ \n
             ) \b
             (?! (?>(?&PerlOWS)) => )
@@ -1072,23 +1072,23 @@ our $GRAMMAR = qr{
         (?! \( )    # )
     |
         :: (?! \w | \{ )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlKeyword>
+    (?<PerlKeyword>   (?<PerlStdKeyword>
         (?!)    # None, by default, but can be overridden in a composing regex
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlPod>
+    (?<PerlPod>   (?<PerlStdPod>
         ^ = [^\W\d]\w*+          # A line starting with =<identifier>
         .*?                      # Up to the first...
         ^ = cut \b [^\n]*+ $     # ...line starting with =cut
-    ) # End of rule
+    )) # End of rule
 
 
     ##### Whitespace matching (part of API) #################################
 
-    (?<PerlOWS>
-        (?(?{ !keys %PPR::_heredoc_skip; })
+    (?<PerlOWS>   (?<PerlStdOWS>
+        (?(?{ !keys %PPR::X::_heredoc_skip; })
             \s*+
             (?:
                 (?>
@@ -1106,13 +1106,13 @@ our $GRAMMAR = qr{
             |
                 __ (?> END | DATA ) __ \b .*+ \z
             |
-                \n  (??{ $PPR::_heredoc_skip{+pos()} // q{} })
+                \n  (??{ $PPR::X::_heredoc_skip{+pos()} // q{} })
             )*+
         )
-    ) # End of rule
+    )) # End of rule
 
-    (?<PerlNWS>
-        (?(?{ !keys %PPR::_heredoc_skip; })
+    (?<PerlNWS>   (?<PerlStdNWS>
+        (?(?{ !keys %PPR::X::_heredoc_skip; })
             (?= [\s#] )
             \s*+
             (?:
@@ -1131,15 +1131,15 @@ our $GRAMMAR = qr{
             |
                 __ (?> END | DATA ) __ \b .*+ \z
             |
-                \n  (??{ $PPR::_heredoc_skip{+pos()} // q{} })
+                \n  (??{ $PPR::X::_heredoc_skip{+pos()} // q{} })
             )++
         )
-    ) # End of rule
+    )) # End of rule
 
 
     ###### Internal components (not part of API) ##########################
 
-    (?<PPR_named_op>
+    (?<PPR_X_named_op>
         (?> cmp
         |   [lg][te]
         |   eq
@@ -1150,11 +1150,11 @@ our $GRAMMAR = qr{
         )
     )
 
-    (?<PPR_non_reserved_identifier>
+    (?<PPR_X_non_reserved_identifier>
         (?! (?>
                for(?:each)?+ | while | if | unless | until | given | when | default
             |  sub | format | use | no
-            |  (?&PPR_named_op)
+            |  (?&PPR_X_named_op)
             |  [msy] | q[wrxq]? | tr
             |   __ (?> END | DATA ) __ \n
             )
@@ -1164,61 +1164,61 @@ our $GRAMMAR = qr{
         (?! :: )
     )
 
-    (?<PPR_three_part_list>
+    (?<PPR_X_three_part_list>
         \(  (?>(?&PerlOWS)) (?: (?>(?&PerlExpression)) (?&PerlOWS) )??
          ;  (?>(?&PerlOWS)) (?: (?>(?&PerlExpression)) (?&PerlOWS) )??
          ;  (?>(?&PerlOWS)) (?: (?>(?&PerlExpression)) (?&PerlOWS) )??
         \)
     )
 
-    (?<PPR_indirect_obj>
+    (?<PPR_X_indirect_obj>
         (?&PerlBareword)
     |
         (?>(?&PerlVariableScalar))
         (?! (?>(?&PerlOWS)) (?> [<\[\{] | -> ) )
     )
 
-    (?<PPR_quotelike_body>
-        (?>(?&PPR_quotelike_body_unclosed))
+    (?<PPR_X_quotelike_body>
+        (?>(?&PPR_X_quotelike_body_unclosed))
         \S   # (Note: Don't have to test that this matches; the preceding subrule already did that)
     )
 
-    (?<PPR_balanced_parens>  [^)(\\]*+   (?: (?> \\. | \( (?>(?&PPR_balanced_parens))  \) ) [^)(\\]*+   )*+ )
-    (?<PPR_balanced_curlies> [^\}\{\\]*+ (?: (?> \\. | \{ (?>(?&PPR_balanced_curlies)) \} ) [^\}\{\\]*+ )*+ )
-    (?<PPR_balanced_squares> [^][\\]*+   (?: (?> \\. | \[ (?>(?&PPR_balanced_squares)) \] ) [^][\\]*+   )*+ )
-    (?<PPR_balanced_angles>  [^><\\]*+   (?: (?> \\. |  < (?>(?&PPR_balanced_angles))   > ) [^><\\]*+   )*+ )
+    (?<PPR_X_balanced_parens>  [^)(\\]*+   (?: (?> \\. | \( (?>(?&PPR_X_balanced_parens))  \) ) [^)(\\]*+   )*+ )
+    (?<PPR_X_balanced_curlies> [^\}\{\\]*+ (?: (?> \\. | \{ (?>(?&PPR_X_balanced_curlies)) \} ) [^\}\{\\]*+ )*+ )
+    (?<PPR_X_balanced_squares> [^][\\]*+   (?: (?> \\. | \[ (?>(?&PPR_X_balanced_squares)) \] ) [^][\\]*+   )*+ )
+    (?<PPR_X_balanced_angles>  [^><\\]*+   (?: (?> \\. |  < (?>(?&PPR_X_balanced_angles))   > ) [^><\\]*+   )*+ )
 
-    (?<PPR_quotelike_body_unclosed>
+    (?<PPR_X_quotelike_body_unclosed>
         (?>
                [#]  [^#\\]*+  (?: \\. [^#\\]*+ )*+   (?= [#] )
         |
             (?>(?&PerlOWS))
             (?>
-                \{  (?>(?&PPR_balanced_curlies))    (?= \} )
+                \{  (?>(?&PPR_X_balanced_curlies))    (?= \} )
             |
-                \[  (?>(?&PPR_balanced_squares))    (?= \] )
+                \[  (?>(?&PPR_X_balanced_squares))    (?= \] )
             |
-                \(  (?>(?&PPR_balanced_parens))     (?= \) )
+                \(  (?>(?&PPR_X_balanced_parens))     (?= \) )
             |
-                 <  (?>(?&PPR_balanced_angles))     (?=  > )
+                 <  (?>(?&PPR_X_balanced_angles))     (?=  > )
             |
                 \\  [^\\]*+                         (?= \\ )
             |
                  /  [^\\/]*+ (?: \\. [^\\/]*+ )*+   (?=  / )
             |
-                (?<PPR_qldel> \S )
-                    (?: \\. | (?! \g{PPR_qldel} ) . )*+
-                (?= \g{PPR_qldel} )
+                (?<PPR_X_qldel> \S )
+                    (?: \\. | (?! \g{PPR_X_qldel} ) . )*+
+                (?= \g{PPR_X_qldel} )
             )
         )
     )
 
-    (?<PPR_filetest_name>   [ABCMORSTWXbcdefgkloprstuwxz]          )
+    (?<PPR_X_filetest_name>   [ABCMORSTWXbcdefgkloprstuwxz]          )
 
-    (?<PPR_digit_seq>               \d++ (?: _?+         \d++ )*+  )
-    (?<PPR_x_digit_seq>     [\da-fA-F]++ (?: _?+ [\da-fA-F]++ )*+  )
-    (?<PPR_o_digit_seq>          [0-7]++ (?: _?+      [0-7]++ )*+  )
-    (?<PPR_b_digit_seq>          [0-1]++ (?: _?+      [0-1]++ )*+  )
+    (?<PPR_X_digit_seq>               \d++ (?: _?+         \d++ )*+  )
+    (?<PPR_X_x_digit_seq>     [\da-fA-F]++ (?: _?+ [\da-fA-F]++ )*+  )
+    (?<PPR_X_o_digit_seq>          [0-7]++ (?: _?+      [0-7]++ )*+  )
+    (?<PPR_X_b_digit_seq>          [0-1]++ (?: _?+      [0-1]++ )*+  )
 )
 }xms;
 
@@ -1228,23 +1228,23 @@ __END__
 
 =head1 NAME
 
-PPR - Pattern-based Perl Recognizer
+PPR::X - Pattern-based Perl Recognizer
 
 
 =head1 VERSION
 
-This document describes PPR version 0.000005
+This document describes PPR::X version 0.000004
 
 
 =head1 SYNOPSIS
 
-    use PPR;
+    use PPR::X;
 
     # Define a regex that will match an entire Perl document...
     my $perl_document = qr{
 
         # What to match            # Install the (?&PerlDocument) rule
-        \A (?&PerlDocument) \Z     $PPR::GRAMMAR
+        \A (?&PerlDocument) \Z     $PPR::X::GRAMMAR
 
     }x;
 
@@ -1253,7 +1253,7 @@ This document describes PPR version 0.000005
     my $perl_block = qr{
 
         # What to match...         # Install the (?&PerlBlock) rule...
-        (?&PerlBlock)              $PPR::GRAMMAR
+        (?&PerlBlock)              $PPR::X::GRAMMAR
     }x;
 
 
@@ -1266,7 +1266,7 @@ This document describes PPR version 0.000005
         (?<coro_code>  (?&PerlBlock)                )
 
         # Install the necessary subrules...
-        $PPR::GRAMMAR
+        $PPR::X::GRAMMAR
     }x;
 
 
@@ -1280,7 +1280,7 @@ This document describes PPR version 0.000005
             (?&PerlOWS)       # More optional whitespace
         \Z
 
-        # Add a 'class' keyword into the syntax that PPR understands...
+        # Add a 'class' keyword into the syntax that PPR::X understands...
         (?(DEFINE)
             (?<PerlKeyword>
 
@@ -1296,13 +1296,13 @@ This document describes PPR version 0.000005
         )
 
         # Install the necessary standard subrules...
-        $PPR::GRAMMAR
+        $PPR::X::GRAMMAR
     }x;
 
 
 =head1 DESCRIPTION
 
-The PPR module provides a single regular expression that defines a set
+The PPR::X module provides a single regular expression that defines a set
 of independent subpatterns suitable for matching entire Perl documents,
 as well as a wide range of individual syntactic components of Perl
 (i.e. statements, expressions, control blocks, variables, etc.)
@@ -1319,27 +1319,27 @@ module, rather than replacing them. See L<"Comparison with PPI">.
 
 =head2 Importing and using the Perl grammar regex
 
-The PPR module exports no subroutines or variables,
+The PPR::X module exports no subroutines or variables,
 and provides no methods. Instead, it defines a single
-package variable, C<$PPR::GRAMMAR>, which can be
+package variable, C<$PPR::X::GRAMMAR>, which can be
 interpolated into regexes to add rules that permit
 Perl constructs to be parsed:
 
-    $source_code =~ m{ \A (?&PerlDocument) \Z  $PPR::GRAMMAR }
+    $source_code =~ m{ \A (?&PerlDocument) \Z  $PPR::X::GRAMMAR }
 
 Note that all the examples to date add this "grammar variable"
 at the end of the regular expression. In most cases, this is
 not necessary. Each of the following works identically:
 
-    $source_code =~ m{ \A (?&PerlDocument) \Z  $PPR::GRAMMAR }
+    $source_code =~ m{ \A (?&PerlDocument) \Z  $PPR::X::GRAMMAR }
 
-    $source_code =~ m{ $PPR::GRAMMAR  \A (?&PerlDocument) \Z }
+    $source_code =~ m{ $PPR::X::GRAMMAR  \A (?&PerlDocument) \Z }
 
-    $source_code =~ m{ \A $PPR::GRAMMAR (?&PerlDocument) \Z  }
+    $source_code =~ m{ \A $PPR::X::GRAMMAR (?&PerlDocument) \Z  }
 
 However, if the grammar is to be L<extended|"Extending the Perl syntax with keywords">,
 then the extensions must be specified B<I<before>> the base grammar
-(i.e. before the interpolation of C<$PPR::GRAMMAR>). Placing the grammar
+(i.e. before the interpolation of C<$PPR::X::GRAMMAR>). Placing the grammar
 variable at the end of a regex ensures that will be the case, and has
 the added advantage of "front-loading" the regex with the most important
 information: what is actually going to be matched.
@@ -1368,7 +1368,7 @@ or, for the less twisty-minded:
   # "Valid" if source code matches a Perl document under the Perl grammar
   printf(
       "$filename %s a valid Perl file\n",
-      slurp($filename) =~ m{\A (?&PerlDocument) \Z  $PPR::GRAMMAR }x
+      slurp($filename) =~ m{\A (?&PerlDocument) \Z  $PPR::X::GRAMMAR }x
           ? "is"
           : "is not"
   );
@@ -1383,7 +1383,7 @@ or, for the less twisty-minded:
               slurp($filename)                 # from the source code,
                   =~ m{ \G (?&PerlOWS)         # skipping whitespace
                           ((?&PerlStatement))  # the keeping statements,
-                          $PPR::GRAMMAR        # using the Perl grammar
+                          $PPR::X::GRAMMAR        # using the Perl grammar
                       }gcx;                    # incrementally
   );
 
@@ -1391,14 +1391,14 @@ or, for the less twisty-minded:
 =head3 Stripping comments and POD from source code
 
   my $source = slurp($filename);                    # Get the source
-  $source =~ s{ (?&PerlNWS)  $PPR::GRAMMAR }{ }gx;  # Compact whitespace
+  $source =~ s{ (?&PerlNWS)  $PPR::X::GRAMMAR }{ }gx;  # Compact whitespace
   print $source;                                    # Print the result
 
 
 =head3 Stripping comments and POD from source code (in Perl v5.14 or later)
 
   # Print  the source code,  having compacted whitespace...
-    print  slurp($filename)  =~ s{ (?&PerlNWS) $PPR::GRAMMAR }{ }gxr;
+    print  slurp($filename)  =~ s{ (?&PerlNWS) $PPR::X::GRAMMAR }{ }gxr;
 
 
 =head3 Stripping everything C<except> comments and POD from source code
@@ -1408,19 +1408,19 @@ or, for the less twisty-minded:
           slurp($filename)                    # from the source code,
               =~ m{ \G ((?&PerlOWS))          # keeping whitespace,
                        (?&PerlStatement)?     # skipping statements,
-                       $PPR::GRAMMAR          # using the Perl grammar
+                       $PPR::X::GRAMMAR          # using the Perl grammar
                   }gcx;                       # incrementally
 
 
 =head2 Available rules
 
-Interpolating C<$PPR::GRAMMAR> in a regex makes all of the following
+Interpolating C<$PPR::X::GRAMMAR> in a regex makes all of the following
 rules available within that regex.
 
 Note that other rules not listed here may also be added, but these are
-all considered strictly internal to the PPR module and are not
+all considered strictly internal to the PPR::X module and are not
 guaranteed to continue to exist in future releases. All such
-"internal-use-only" rules have names that start with C<PPR_>...
+"internal-use-only" rules have names that start with C<PPR_X_>...
 
 
 =head3 C<< (?&PerlDocument) >>
@@ -1767,7 +1767,7 @@ the terminator.
 So, for example, to correctly match a heredoc plus its contents
 you could use something like:
 
-    m/ (?&PerlHeredoc) (?&PerlOWS)   $PPR::GRAMMAR /x
+    m/ (?&PerlHeredoc) (?&PerlOWS)   $PPR::X::GRAMMAR /x
 
 or, if there may be trailing items on the same line as the heredoc
 specifier:
@@ -1776,7 +1776,7 @@ specifier:
        (?<trailing_items> [^\n]* )
        (?&PerlOWS)
 
-       $PPR::GRAMMAR
+       $PPR::X::GRAMMAR
     /x
 
 
@@ -1962,7 +1962,7 @@ C<__END__> or C<__DATA__> section.
 Match a pluggable keyword.
 
 Note that there are no pluggable keywords
-in the default PPR regex;
+in the default PPR::X regex;
 they must be added by the end-user.
 See the following section for details.
 
@@ -1987,9 +1987,9 @@ add a C<result> statement that simplifies returning an ad hoc object from a
 subroutine.
 
 Unfortunately, because such modules effectively extend the standard Perl
-syntax, by default PPR has no way of successfully parsing them.
+syntax, by default PPR::X has no way of successfully parsing them.
 
-However, when setting up a regex using C<$PPR::GRAMMAR> it is possible to
+However, when setting up a regex using C<$PPR::X::GRAMMAR> it is possible to
 extend that grammar to deal with new keywords...by defining a rule named
 C<< (?<PerlKeyword>...) >>.
 
@@ -2032,8 +2032,8 @@ For example, to support the three keywords from L<Dios>:
             )
         )
 
-        # Add all the standard PPR rules...
-        $PPR::GRAMMAR
+        # Add all the standard PPR::X rules...
+        $PPR::X::GRAMMAR
     }x;
 
     # Then parse with it...
@@ -2060,8 +2060,8 @@ Or, to support the C<result> statement from C<Object::Result>:
             )
         )
 
-        # Add all the standard PPR rules...
-        $PPR::GRAMMAR
+        # Add all the standard PPR::X rules...
+        $PPR::X::GRAMMAR
     }x;
 
     # Then parse with it...
@@ -2069,7 +2069,7 @@ Or, to support the C<result> statement from C<Object::Result>:
     $source_code =~ m{ \A (?&PerlDocument) \Z  $ORK_GRAMMAR }x;
 
 Note that, although pluggable keywords are only available from Perl
-5.12 onwards, PPR will still accept C<(&?PerlKeyword)> extensions under
+5.12 onwards, PPR::X will still accept C<(&?PerlKeyword)> extensions under
 Perl 5.10.
 
 
@@ -2080,7 +2080,6 @@ make it possible to extend Perl syntax in even more flexible ways.
 The L<< PPR::X >> module provides support for syntactic extensions more
 general than pluggable keywords.
 
-=begin PPR::X
 
 PPR::X allows I<any> of its public rules to be redefined in a
 particular regex. For example, to create a regex that matches
@@ -2152,11 +2151,10 @@ operators (C<and>, C<or>, C<xor>, and C<not>) with their Latin equivalents:
     }x;
 
 
-=end PPR::X
 
 =head2 Comparison with PPI
 
-The PPI and PPR modules can both identify valid Perl code,
+The PPI and PPR::X modules can both identify valid Perl code,
 but they do so in very different ways, and are optimal for
 different purposes.
 
@@ -2165,17 +2163,17 @@ representation of the various components. It is therefore suitable for
 recognition, validation, partial extraction, and in-place transformation
 of Perl code.
 
-PPR matches only as much of a Perl document as specified by the regex
+PPR::X matches only as much of a Perl document as specified by the regex
 you create, and does not build any hierarchical representation of the
 various components it matches. It is therefore suitable for recognition
-and validation of Perl code. However, unless great care is taken, PPR is
+and validation of Perl code. However, unless great care is taken, PPR::X is
 not as reliable as PPI for extractions or transformations of components
 smaller than a single statement.
 
 On the other hand, PPI always has to parse its entire input, and
 build a complete non-trivial nested data structure for it, before it
 can be used to recognize or validate any component. So it is almost
-always significantly slower and more complicated than PPR for those
+always significantly slower and more complicated than PPR::X for those
 kinds of tasks.
 
 For example, to determine whether an input string begins with a valid
@@ -2190,20 +2188,20 @@ Perl block, PPI requires something like:
         }
     }
 
-whereas PPR needs just:
+whereas PPR::X needs just:
 
     if ($input_string =~ m{ \A (?&PerlOWS) ((?&PerlBlock)) (.*) }xs) {
         process_block($1);
         process_extra($2);
     }
 
-Moreover, the PPR version will be at least twice as fast at recognizing that
+Moreover, the PPR::X version will be at least twice as fast at recognizing that
 leading block (and usually four to seven times faster)...mainly because it
 doesn't have to parse the trailing code at all, nor build any representation
 of its hierarchical structure.
 
 As a simple rule of thumb, when you only need to quickly detect, identify,
-or confirm valid Perl (or just a single valid Perl component), use PPR.
+or confirm valid Perl (or just a single valid Perl component), use PPR::X.
 When you need to examine, traverse, or manipulate the internal structure
 or component relationships within an entire Perl document, use PPI.
 
@@ -2215,7 +2213,7 @@ or component relationships within an entire Perl document, use PPI.
 =item C<Warning: This program is running under Perl 5.20...>
 
 Due to an unsolved issue with that particular release of Perl, the
-single regex in the PPR module takes a ridiculously long time
+single regex in the PPR::X module takes a ridiculously long time
 to compile under Perl 5.20 (i.e. minutes, not milliseconds).
 
 The code will work correctly when it eventually does compile,
@@ -2231,7 +2229,7 @@ of Perl.
 The module has no other diagnostics, apart from those Perl
 provides for all regular expressions.
 
-The commonest error is to forget to add C<$PPR::GRAMMAR>
+The commonest error is to forget to add C<$PPR::X::GRAMMAR>
 to a regex, in which case you will get a standard Perl
 error message such as:
 
@@ -2242,13 +2240,13 @@ error message such as:
 
     / at example.pl line 42.
 
-Adding C<$PPR::GRAMMAR> at the end of the regex solves the problem.
+Adding C<$PPR::X::GRAMMAR> at the end of the regex solves the problem.
 
 
 
 =head1 CONFIGURATION AND ENVIRONMENT
 
-PPR requires no configuration files or environment variables.
+PPR::X requires no configuration files or environment variables.
 
 
 =head1 DEPENDENCIES
@@ -2267,7 +2265,7 @@ This module works under all versions of Perl from 5.10 onwards.
 
 However, the lastest release of Perl 5.20 seems to have significant
 difficulties compiling large regular expressions, and typically requires
-over a minute to build any regex that incorporates the C<$PPR::GRAMMAR> rule
+over a minute to build any regex that incorporates the C<$PPR::X::GRAMMAR> rule
 definitions.
 
 The problem does not occur in Perl 5.10 to 5.18, nor in Perl 5.22 or later,

@@ -1,5 +1,6 @@
 Changes
 lib/PPR.pm
+lib/PPR/X.pm
 Makefile.PL
 MANIFEST
 README
