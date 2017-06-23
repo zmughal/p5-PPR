@@ -55,5 +55,6 @@ demo/strip_code.pl
 demo/strip_comments.pl
 demo/strip_comments_v5.14.pl
 demo/validator.pl
+t/PPR_ERROR.t
 META.yml                                 Module YAML meta-data (added by MakeMaker)
 META.json                                Module JSON meta-data (added by MakeMaker)

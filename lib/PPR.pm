@@ -13,8 +13,25 @@ BEGIN {
     }
 }
 use warnings;
-our $VERSION = '0.000005';
+our $VERSION = '0.000006';
 use utf8;
+
+# Class for $PPR::ERROR objects...
+{ package PPR::ERROR;
+  use overload q{""} => 'source', q{0+} => 'line', fallback => 1;
+
+  sub new {
+      my ($class, %obj) = @_;
+      return bless \%obj, $class;
+  }
+
+  sub prefix { return shift->{prefix} }
+  sub source { return shift->{source} }
+  sub line   { my $self = shift;
+               my $offset = shift // 1;
+               return $offset + $self->{prefix} =~ tr/\n//;
+              }
+}
 
 # Define the grammar...
 our $GRAMMAR = qr{
@@ -91,6 +108,16 @@ our $GRAMMAR = qr{
 
         | # Just an empty statement...
             (?>(?&PerlOWS)) ;
+
+        | # An error (report it, if it's the first)...
+            (?(?{ !defined $PPR::ERROR })
+                (?> (?&PerlOWS) )
+                (?! (?: \} | \z ) )
+                (?{ pos() })
+                ( (?&PerlExpression) (?&PerlOWS) [^\n]++ | [^;\}]++ )
+                (?{ $PPR::ERROR //= PPR::ERROR->new(source => $^N, prefix => substr($_, 0, $^R) ) })
+                (?!)
+            )
         )
     ) # End of rule
 
@@ -969,6 +996,7 @@ our $GRAMMAR = qr{
 
     (?<PerlBuiltinFunction>
         # Optimized to match any Perl builtin name, without backtracking...
+        (?=[^\W\d]) # Skip if possible
         (?>
              s(?>e(?>t(?>(?>(?>(?>hos|ne)t|gr)en|s(?>erven|ockop))t|p(?>r(?>iority|otoent)|went|grp))|m(?>ctl|get|op)|ek(?>dir)?|lect|nd)|y(?>s(?>write|call|open|read|seek|tem)|mlink)|h(?>m(?>write|read|ctl|get)|utdown|ift)|o(?>cket(?>pair)?|rt)|p(?>li(?>ce|t)|rintf)|(?>cala|ubst)r|t(?>ate?|udy)|leep|rand|qrt|ay|in)
             | g(?>et(?>p(?>r(?>oto(?>byn(?>umber|ame)|ent)|iority)|w(?>ent|nam|uid)|eername|grp|pid)|s(?>erv(?>by(?>name|port)|ent)|ock(?>name|opt))|host(?>by(?>addr|name)|ent)|net(?>by(?>addr|name)|ent)|gr(?>ent|gid|nam)|login|c)|mtime|lob|oto|rep)
@@ -1000,6 +1028,7 @@ our $GRAMMAR = qr{
 
     (?<PerlNullaryBuiltinFunction>
         # Optimized to match any Perl builtin name, without backtracking...
+        (?= [^\W\d] )  # Skip if possible
         (?>
               get(?:(?:(?:hos|ne)t|serv|gr)ent|p(?:(?:roto|w)ent|pid)|login)
             | end(?:(?:hos|ne)t|p(?:roto|w)|serv|gr)ent
@@ -1233,7 +1262,7 @@ PPR - Pattern-based Perl Recognizer
 
 =head1 VERSION
 
-This document describes PPR version 0.000005
+This document describes PPR version 0.000006
 
 
 =head1 SYNOPSIS
@@ -1345,13 +1374,74 @@ the added advantage of "front-loading" the regex with the most important
 information: what is actually going to be matched.
 
 
+=head2 Error reporting
+
+Regex-based parsing is all-or-nothing: either your regex matches
+(and returns any captures your requested), or it fails to match
+(and returns nothing).
+
+This can make it difficult to detect I<why> a PPR-based match failed;
+to work out what the "bad source code" was that prevented your regex
+from matching.
+
+So the module provides a special variable that attempts to detect the
+source code that prevented any call to the C<(?&PerlStatement)> subpattern
+from matching. That variable is: C<$PPR::ERROR>
+
+C<$PPR::ERROR> is only set if it is undefined at the point where an
+error is detected, and will only be set to the first such error that
+is encountered during parsing.
+
+If it is set, C<$PPR::ERROR> will contain an object of type PPR::ERROR,
+with the following methods:
+
+=over
+
+=item C<< $PRR::ERROR->source() >>
+
+Returns a string containing the source code that could not
+be parsed as a Perl statement.
+
+=item C<< $PRR::ERROR->prefix() >>
+
+Returns a string containing all the source code preceding the
+code that could not be parsed. That is: the valid code that is
+the preceding context of the unparsable code.
+
+=item C<< $PRR::ERROR->line( $opt_offset ) >>
+
+Returns an integer which is the line number at which the unparsable
+code was encountered. If the optional "offset" argument is provided,
+the lit will be added to the line number returned.
+
+=back
+
+A typical use might therefore be:
+
+    # Make sure it's undefined, and will only be locally modified...
+    local $PPR::ERROR;
+
+    # Process the matched block...
+    if ($source_code =~ m{ (?<Block> (?&PerlBlock) )  $PPR::GRAMMAR }x) {
+        process( $+{Block} );
+    }
+
+    # Or report the code that was found instead of a block...
+    else {
+        die "Invalid Perl block. Syntax error at line ",
+            $PPR::ERROR->line
+            ', near: ',
+            $PPR::ERROR->source;
+    }
+
+
 =head2 Examples
 
 I<Note:> In each of the following examples, the subroutine C<slurp()> is
 used to acquire the source code from a file whose name is passed as its
 argument. The C<slurp()> subroutine is just:
 
-    sub slurp { local (@ARGV, $/) = shift; readline; }
+    sub slurp { local (*ARGV, $/); @ARGV = shift; readline; }
 
 or, for the less twisty-minded:
 

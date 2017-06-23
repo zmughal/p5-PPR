@@ -1,17 +1,29 @@
 Revision history for PPR
 
 0.000001  Wed May 27 15:12:24 2015
-       Initial release.
 
+    * Initial release.
 
 
 0.000003  Tue Jun 20 06:05:22 2017
-          No changes logged
+
+    * No changes logged
 
 
 0.000005  Tue Jun 20 19:27:37 2017
 
-    Added missing PPR::X module
-    (Thanks MST)
+    * Added missing PPR::X module
+      (Thanks MST)
 
+
+
+0.000006  Thu Jun 22 21:04:14 2017
+
+    * Fixed documentation bug with slurp (pre-)example.
+      (Thanks, Randal!)
+
+    * Optimized matching of builtins slightly
+
+    * Added $PPR::ERROR variable to assist error reporting on failure to match
+      (Many thanks, MST!)
 
