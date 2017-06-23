@@ -13,11 +13,12 @@ BEGIN {
     }
 }
 use warnings;
-our $VERSION = '0.000005';
+our $VERSION = '0.000006';
 use utf8;
 
 # Class for $PPR::X::ERROR objects...
 { package PPR::X::ERROR;
+
   use overload q{""} => 'source', q{0+} => 'line', fallback => 1;
 
   sub new {
@@ -26,11 +27,35 @@ use utf8;
   }
 
   sub prefix { return shift->{prefix} }
+
   sub source { return shift->{source} }
+
   sub line   { my $self = shift;
-               my $offset = shift // 1;
+               my $offset = $self->{line} // shift // 1;
                return $offset + $self->{prefix} =~ tr/\n//;
               }
+
+  sub origin { my $self = shift;
+               my $line = shift // 0;
+               my $file = shift // "";
+               return bless { %{$self}, line => $line, file => $file }, ref($self);
+             }
+
+  sub diagnostic { my $self = shift;
+                   my $line = defined $self->{line}
+                                    ? $self->{line} + $self->{prefix} =~ tr/\n//
+                                    : 0;
+                   my $file = $self->{file} // q{};
+                   return q{} if eval "no strict;\n"
+                                    . "#line $line $file\n"
+                                    . "sub{ $self->{source} }";
+                   my $diagnostic = $@;
+                   $diagnostic =~ s{ \s*+ \bat \s++ \( eval \s++ \d++ \) \s++ line \s++ 0,
+                                   | \s*+ \( eval \s++ \d++ \)
+                                   | \s++ \Z
+                                   }{}gx;
+                   return $diagnostic;
+                 }
 }
 
 # Define the grammar...
@@ -1262,7 +1287,7 @@ PPR::X - Pattern-based Perl Recognizer
 
 =head1 VERSION
 
-This document describes PPR::X version 0.000005
+This document describes PPR::X version 0.000006
 
 
 =head1 SYNOPSIS
@@ -1397,22 +1422,43 @@ with the following methods:
 
 =over
 
-=item C<< $PRR::ERROR->source() >>
+=item C<< $PPR::X::ERROR->origin($line, $file) >>
 
-Returns a string containing the source code that could not
-be parsed as a Perl statement.
+Returns a clone of the PPR::X::ERROR object that now believes that
+it originates from a source code fragment from the specified file where
+the fragment began at the specified line. If the second argument is
+omitted, the file name is ignored in any diagnostic.
 
-=item C<< $PRR::ERROR->prefix() >>
+=item C<< $PPR::X::ERROR->source() >>
+
+Returns a string containing the specific source code that could not be
+parsed as a Perl statement.
+
+=item C<< $PPR::X::ERROR->prefix() >>
 
 Returns a string containing all the source code preceding the
 code that could not be parsed. That is: the valid code that is
 the preceding context of the unparsable code.
 
-=item C<< $PRR::ERROR->line( $opt_offset ) >>
+=item C<< $PPR::X::ERROR->line( $opt_offset ) >>
 
 Returns an integer which is the line number at which the unparsable
 code was encountered. If the optional "offset" argument is provided,
-the lit will be added to the line number returned.
+the lit will be added to the line number returned. Note that the offset
+is ignored if the PPR::X::ERROR object originates from a prior call to
+C<$PPR::X::ERROR->origin> (because in that case you will have already
+specified the correct offset).
+
+=item C<< $PPR::X::ERROR->diagnostic() >>
+
+Returns a string containing the diagnostic that would be returned
+by C<perl -c> if the source code were compiled.
+
+B<I<Warning:>> The diagnostic is obtained by partially eval'ing
+the source code. This means that run-time code will not be executed,
+but C<BEGIN> and C<CHECK> blocks will run. Do B<I<not>> call this method
+if the source code that created this error might also have non-trivial
+compile-time side-effects.
 
 =back
 
@@ -1428,10 +1474,8 @@ A typical use might therefore be:
 
     # Or report the code that was found instead of a block...
     else {
-        die "Invalid Perl block. Syntax error at line ",
-            $PPR::X::ERROR->line
-            ', near: ',
-            $PPR::X::ERROR->source;
+        die "Invalid Perl block: " . $PPR::X::ERROR->source . "\n",
+            $PPR::X::ERROR->origin($linenum, $filename)->diagnostic . "\n";
     }
 
 
