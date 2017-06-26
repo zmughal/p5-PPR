@@ -6,7 +6,7 @@ plan tests => 1;
 
 use PPR;
 
-ok "qr[ $PPR::GRAMMAR ]"
+ok "qr[ $$PPR::GRAMMAR ]"
     =~ m{ ^ (?&PerlOWS) (?&PerlQuotelikeQR) (?&PerlOWS) $  $PPR::GRAMMAR }xms
         => 'Matched own grammar';
 

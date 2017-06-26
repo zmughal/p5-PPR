@@ -32,3 +32,24 @@ Revision history for PPR
 0.000007  Fri Jun 23 06:45:49 2017
 
     * Improved $PPR::ERROR API by adding origin location and diagnostics
+
+
+
+0.000008  Sun Jun 25 15:24:13 2017
+
+    * Unknotted POD nits.
+
+    * Small optimizations to keyword and identifier recognition.
+
+    * Fixed handling of multiline quotelikes that span heredoc contents.
+      (Thanks Lukas)
+
+    * SIGNIFICANT CHANGE: The $PPR::GRAMMAR variable now has to be
+      interpolated at the start of any regex using it.
+
+    * Fixed handling of layered heredocs (at the cost of having to install
+      $PPR::GRAMMAR at the start of each grammar).
+      (Thanks Lukas)
+
+    * Fixed diamond operator parsing.
+      (Thanks Lukas)
