@@ -1,5 +1,3 @@
-use 5.014;
-
 use warnings;
 use strict;
 use Test::More;
@@ -17,7 +15,6 @@ A
 _EOT_
 
 ok $code =~ m{
-    $PPR::GRAMMAR
     \A
     (?&PerlOWS)
     (?<statement> (?&PerlStatement)?)
@@ -26,6 +23,8 @@ ok $code =~ m{
     42\n
     A\n
     \Z
+
+    $PPR::GRAMMAR
 }x => 'Matched';
 
 is $+{statement}, "<<<<<<A;" => 'Matched correctly';

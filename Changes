@@ -16,7 +16,6 @@ Revision history for PPR
       (Thanks MST)
 
 
-
 0.000006  Thu Jun 22 21:04:14 2017
 
     * Fixed documentation bug with slurp (pre-)example.
@@ -32,7 +31,6 @@ Revision history for PPR
 0.000007  Fri Jun 23 06:45:49 2017
 
     * Improved $PPR::ERROR API by adding origin location and diagnostics
-
 
 
 0.000008  Sun Jun 25 15:24:13 2017
@@ -53,3 +51,13 @@ Revision history for PPR
 
     * Fixed diamond operator parsing.
       (Thanks Lukas)
+
+
+0.000009  Thu Jun 29 08:17:24 2017
+
+    * SIGNIFICANT REVERSION: The $PPR::GRAMMAR variable no longer
+      has to be interpolated at the start of any regex using it.
+      Indeed, that placement is not recommended due to its effects
+      on the numbering of positional captures within the main regex.
+
+    * Fixed test files to allow testing under 5.10+, rather than 5.14+

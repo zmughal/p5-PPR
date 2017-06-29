@@ -14,15 +14,16 @@ X
 line 3\n!;
 _EOT_
 
-ok $code =~ m{ $PPR::GRAMMAR
-               \A (?&PerlDocument) \z }x
+ok $code =~ m{ \A (?&PerlDocument) \z $PPR::GRAMMAR }x
                     => 'Matched document';
 
-ok $code =~ m{ $PPR::GRAMMAR
+ok $code =~ m{
                \A (?&PerlHeredoc) , (?&PerlOWS)
                   (?&PerlString)    (?&PerlOWS)
                   ;
                \Z
+
+               $PPR::GRAMMAR
              }x => 'Matched pieces';
 
 done_testing();

@@ -11,9 +11,9 @@ while ( my $source = readline *DATA ) {
     chomp $source;
 
     my $matched
-        = $source =~ m{ $PPR::GRAMMAR \A (?&PerlOWS) (?&PerlBlock) (?&PerlOWS) \Z }xms;
+        = $source =~ m{ \A (?&PerlOWS) (?&PerlBlock) (?&PerlOWS) \Z $PPR::GRAMMAR }xms;
 
-    ok $matched;
+    ok $matched             => "Matched heredoc'd block $.";
     diag $source if !$matched;
 }
 

@@ -1,17 +1,15 @@
-#! /usr/bin/env perl
-
-use 5.014;
 use warnings;
 use Test::More;
 use re 'eval';
 
-plan tests => 3;
+plan tests => 4;
 
 use PPR;
 
-my $MATCH_DOCUMENT = qr{ $PPR::GRAMMAR \A (?&PerlDocument) \z }x;
+my $MATCH_DOCUMENT = qr{ \A (?&PerlDocument) \z  $PPR::GRAMMAR }x;
 
-my $code = <<'_EOT_';
+my $code;
+$code = <<'_EOT_';
 <<A . <<A;
 )
 A
@@ -19,7 +17,8 @@ A
 A
 _EOT_
 
-ok $code =~ $MATCH_DOCUMENT;
+ok $code =~ $MATCH_DOCUMENT => 'AA';
+ok $code =~ $MATCH_DOCUMENT => 'AA again';
 
 $code = <<'_EOT_';
 <<A . <<B;
@@ -29,7 +28,7 @@ A
 B
 _EOT_
 
-ok $code =~ $MATCH_DOCUMENT;
+ok $code =~ $MATCH_DOCUMENT => 'AB';
 
 
 $code = <<'_EOT_';
@@ -40,6 +39,6 @@ A
 A
 _EOT_
 
-ok $code =~ $MATCH_DOCUMENT;
+ok $code =~ $MATCH_DOCUMENT => 'AA yet again';
 
 done_testing();

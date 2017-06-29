@@ -13,7 +13,7 @@ BEGIN {
     }
 }
 use warnings;
-our $VERSION = '0.000008';
+our $VERSION = '0.000009';
 use utf8;
 
 # Class for $PPR::ERROR objects...
@@ -60,7 +60,6 @@ use utf8;
 
 # Define the grammar...
 our $GRAMMAR = qr{
-(?{ %PPR::_heredoc_skip = (); })
 (?(DEFINE)
     (?<PerlDocument>
             (?>(?&PerlOWS))
@@ -862,20 +861,35 @@ our $GRAMMAR = qr{
                    (?<_heredoc_terminator>                                  )
         )?+
 
-        # Lookahead to detect and remember trailing contents of heredoc
-        (?=
-            [^\n]*+ \n                                           # Go to the end of the current line
-            (?{ +pos() })                                        # Remember the start location
-            (?: (??{ $PPR::_heredoc_skip{+pos()} // q{} }) )++   # Skip earlier heredoc contents
-            (?:                                                  # The heredoc contents consist of...
-                (?: [^\n]*+ \n )*?                               #     A minimal number of lines
-                (?(?{ $+{_heredoc_indented} }) \h*+ )            #     An indent (if it was a <<~)
-                \g{_heredoc_terminator}                          #     The specified terminator
-                (?: \n | \z )                                    #     Followed by EOL
-            )
+        # Do we need to reset heredoc cache???
+        (?{
+            if ( ($PPR::_heredoc_origin//q{}) ne $_ ) {
+                %PPR::_heredoc_skip      = ();
+                %PPR::_heredoc_parsed_to = ();
+                $PPR::_heredoc_origin    = $_;
+            }
+        })
 
-            # Then memoize the skip for when it's subsequently needed by PerlOWS or PerlNWS...
-            (?{ $PPR::_heredoc_skip{$^R} = "(?s:.\{" . (pos() - $^R) . "\})"; })
+        # Do we need to cache content lookahead for this heredoc???
+        (?(?{ my $look = !$PPR::_heredoc_parsed_to{+pos()}; $PPR::_heredoc_parsed_to{+pos()} = 1; $look; })
+
+            # Lookahead to detect and remember trailing contents of heredoc
+            (?=
+                [^\n]*+ \n                                           # Go to the end of the current line
+                (?{ +pos() })                                        # Remember the start of the contents
+                (??{ $PPR::_heredoc_skip{+pos()} // q{} })           # Skip earlier heredoc contents
+                (?:                                                  # The heredoc contents consist of...
+                    (?: [^\n]*+ \n )*?                               #     A minimal number of lines
+                    (?(?{ $+{_heredoc_indented} }) \h*+ )            #     An indent (if it was a <<~)
+                    \g{_heredoc_terminator}                          #     The specified terminator
+                    (?: \n | \z )                                    #     Followed by EOL
+                )
+
+                # Then memoize the skip for when it's subsequently needed by PerlOWS or PerlNWS...
+                (?{
+                    $PPR::_heredoc_skip{$^R} = "(?s:.\{" . (pos() - $^R) . "\})";
+                })
+            )
         )
 
     ) # End of rule
@@ -1363,7 +1377,7 @@ PPR - Pattern-based Perl Recognizer
 
 =head1 VERSION
 
-This document describes PPR version 0.000008
+This document describes PPR version 0.000009
 
 
 =head1 SYNOPSIS
@@ -1373,11 +1387,8 @@ This document describes PPR version 0.000008
     # Define a regex that will match an entire Perl document...
     my $perl_document = qr{
 
-        # Install the (?&PerlDocument) rule
-        $PPR::GRAMMAR
-
-        # What to match           
-        \A (?&PerlDocument) \Z
+        # What to match            # Install the (?&PerlDocument) rule
+        \A (?&PerlDocument) \Z     $PPR::GRAMMAR
 
     }x;
 
@@ -1385,32 +1396,26 @@ This document describes PPR version 0.000008
     # Define a regex that will match a single Perl block...
     my $perl_block = qr{
 
-        # Install the (?&PerlBlock) rule...
-        $PPR::GRAMMAR
-
-        # What to match...
-        (?&PerlBlock)
+        # What to match...         # Install the (?&PerlBlock) rule...
+        (?&PerlBlock)              $PPR::GRAMMAR
     }x;
 
 
     # Define a regex that will match a simple Perl extension...
     my $perl_coroutine = qr{
 
-        # Install the necessary subrules...
-        $PPR::GRAMMAR
-
         # What to match...
         coro                                           (?&PerlOWS)
         (?<coro_name>  (?&PerlQualifiedIdentifier)  )  (?&PerlOWS)
         (?<coro_code>  (?&PerlBlock)                )
+
+        # Install the necessary subrules...
+        $PPR::GRAMMAR
     }x;
 
 
     # Define a regex that will match an integrated Perl extension...
     my $perl_with_classes = qr{
-
-        # Install the necessary standard subrules...
-        $PPR::GRAMMAR
 
         # What to match...
         \A
@@ -1433,6 +1438,9 @@ This document describes PPR version 0.000008
                 \( (?: [^()]++ | (?&kw_balanced_parens) )*+ \)
             )
         )
+
+        # Install the necessary standard subrules...
+        $PPR::GRAMMAR
     }x;
 
 
@@ -1461,17 +1469,30 @@ package variable, C<$PPR::GRAMMAR>, which can be
 interpolated into regexes to add rules that permit
 Perl constructs to be parsed:
 
-    $source_code =~ m{ $PPR::GRAMMAR  \A (?&PerlDocument) \Z };
+    $source_code =~ m{ \A (?&PerlDocument) \Z  $PPR::GRAMMAR }x;
 
-Note that it is necessary to interpolate the C<$PPR::GRAMMAR>
-variable at the very beginning of any regular expression.
-If the variable is interpolated anywhere else in the regex
-then parsing of heredocs will not work in most cases.
+Note that all the examples shown so far have interpolated this "grammar
+variable" at the end of the regular expression. This placement is
+desirable, but not necessary. Each of the following works identically:
 
-However, if the grammar is to be
-L<extended|"Extending the Perl syntax with keywords">,
+    $source_code =~ m{ \A (?&PerlDocument) \Z  $PPR::GRAMMAR }x;
+
+    $source_code =~ m{ $PPR::GRAMMAR  \A (?&PerlDocument) \Z }x;
+
+    $source_code =~ m{ \A $PPR::GRAMMAR (?&PerlDocument) \Z  }x;
+
+However, if the grammar is to be L<extended|"Extending the Perl syntax with keywords">,
 then the extensions must be specified B<I<before>> the base grammar
-(i.e. before the interpolation of C<$PPR::GRAMMAR>).
+(i.e. before the interpolation of C<$PPR::GRAMMAR>). Placing the grammar
+variable at the end of a regex ensures that will be the case, and has
+the added advantage of "front-loading" the regex with the most important
+information: what is actually going to be matched.
+
+Note too that, because the PPR grammar internally uses capture groups,
+placing C<$PPR::GRAMMAR> anywhere other than the very end of your regex
+may change the numbering of any explicit capture groups in your regex.
+For complete safety, regexes that use the PPR grammar should probably
+use named captures, instead of numbered captures.
 
 
 =head2 Error reporting
@@ -1543,7 +1564,7 @@ A typical use might therefore be:
     local $PPR::ERROR;
 
     # Process the matched block...
-    if ($source_code =~ m{ $PPR::GRAMMAR  (?<Block> (?&PerlBlock) ) }x) {
+    if ($source_code =~ m{ (?<Block> (?&PerlBlock) )  $PPR::GRAMMAR }x) {
         process( $+{Block} );
     }
 
@@ -1577,7 +1598,7 @@ or, for the less twisty-minded:
   # "Valid" if source code matches a Perl document under the Perl grammar
   printf(
       "$filename %s a valid Perl file\n",
-      slurp($filename) =~ m{ $PPR::GRAMMAR  \A (?&PerlDocument) \Z }x
+      slurp($filename) =~ m{ \A (?&PerlDocument) \Z  $PPR::GRAMMAR }x
           ? "is"
           : "is not"
   );
@@ -1590,9 +1611,10 @@ or, for the less twisty-minded:
       scalar                                     # the count of
           grep {defined}                         # defined matches
               slurp($filename)                   # from the source code,
-                  =~ m{ $PPR::GRAMMAR            # using the Perl grammar
-                        \G (?&PerlOWS)           #   to skip whitespace
-                           ((?&PerlStatement))   #   and keep statements,
+                  =~ m{
+                        \G (?&PerlOWS)           # to skip whitespace
+                           ((?&PerlStatement))   # and keep statements,
+                        $PPR::GRAMMAR            # using the Perl grammar
                       }gcx;                      # incrementally
   );
 
@@ -1600,14 +1622,14 @@ or, for the less twisty-minded:
 =head3 Stripping comments and POD from source code
 
   my $source = slurp($filename);                    # Get the source
-  $source =~ s{ $PPR::GRAMMAR  (?&PerlNWS) }{ }gx;  # Compact whitespace
+  $source =~ s{ (?&PerlNWS)  $PPR::GRAMMAR }{ }gx;  # Compact whitespace
   print $source;                                    # Print the result
 
 
 =head3 Stripping comments and POD from source code (in Perl v5.14 or later)
 
   # Print  the source code,  having compacted whitespace...
-    print  slurp($filename)  =~ s{ $PPR::GRAMMAR  (?&PerlNWS) }{ }gxr;
+    print  slurp($filename)  =~ s{ (?&PerlNWS)  $PPR::GRAMMAR }{ }gxr;
 
 
 =head3 Stripping everything C<except> comments and POD from source code
@@ -1615,9 +1637,9 @@ or, for the less twisty-minded:
   say                                         # Output
       grep {defined}                          # defined matches
           slurp($filename)                    # from the source code,
-              =~ m{ $PPR::GRAMMAR             # using the Perl grammar
-                    \G ((?&PerlOWS))          #   keeping whitespace,
-                       (?&PerlStatement)?     #   skipping statements,
+              =~ m{ \G ((?&PerlOWS))          # keeping whitespace,
+                       (?&PerlStatement)?     # skipping statements,
+                    $PPR::GRAMMAR             # using the Perl grammar
                   }gcx;                       # incrementally
 
 
@@ -1976,16 +1998,16 @@ the terminator.
 So, for example, to correctly match a heredoc plus its contents
 you could use something like:
 
-    m/ $PPR::GRAMMAR  (?&PerlHeredoc) (?&PerlOWS) /x
+    m/ (?&PerlHeredoc) (?&PerlOWS)  $PPR::GRAMMAR /x
 
 or, if there may be trailing items on the same line as the heredoc
 specifier:
 
-    m/ $PPR::GRAMMAR
-
-       (?&PerlHeredoc)
+    m/ (?&PerlHeredoc)
        (?<trailing_items> [^\n]* )
        (?&PerlOWS)
+
+       $PPR::GRAMMAR
     /x
 
 
