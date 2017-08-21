@@ -8,6 +8,7 @@ plan tests => 3;
 
 use PPR;
 
+use Regexp::Debugger;
 my $Perl_document = qr{
     ^ (?&PerlDocument) $  $PPR::GRAMMAR
 }xms;
