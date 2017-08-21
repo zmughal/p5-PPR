@@ -109,3 +109,9 @@ Revision history for PPR
 
     * Neutralized bizarre undefined warnings
       under earlier Perl versions.
+
+
+0.000013  Mon Aug 21 20:54:42 2017
+
+    * Removed spurious Regexp::Debugger dependency
+      (Thanks Slaven!)

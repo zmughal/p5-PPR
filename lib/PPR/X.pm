@@ -15,7 +15,7 @@ BEGIN {
     }
 }
 use warnings;
-our $VERSION = '0.000011';
+our $VERSION = '0.000012';
 use utf8;
 
 # Class for $PPR::X::ERROR objects...
@@ -1743,7 +1743,7 @@ PPR::X - Pattern-based Perl Recognizer
 
 =head1 VERSION
 
-This document describes PPR::X version 0.000011
+This document describes PPR::X version 0.000012
 
 
 =head1 SYNOPSIS
