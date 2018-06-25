@@ -15,7 +15,7 @@ BEGIN {
     }
 }
 use warnings;
-our $VERSION = '0.000016';
+our $VERSION = '0.000017';
 use utf8;
 
 # Class for $PPR::X::ERROR objects...
@@ -1799,7 +1799,7 @@ sub decomment {
 
 sub _uniq {
     my %seen;
-    return grep {!$seen{$_}} @_;
+    return grep {!$seen{$_}++} @_;
 }
 
 sub _croak {
@@ -1818,7 +1818,7 @@ PPR::X - Pattern-based Perl Recognizer
 
 =head1 VERSION
 
-This document describes PPR::X version 0.000016
+This document describes PPR::X version 0.000017
 
 
 =head1 SYNOPSIS

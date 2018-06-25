@@ -158,3 +158,9 @@ Revision history for PPR
 
     * Added Perl 5.28 ":attributes(before) ($ignature)" syntax for subroutines
       (thanks, Matt)
+
+
+0.000018  Mon Jun 25 09:59:36 2018
+
+    * Fixed _uniq()
+      (thanks Adriano!)
