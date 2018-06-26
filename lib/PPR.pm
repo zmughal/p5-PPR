@@ -15,7 +15,7 @@ BEGIN {
     }
 }
 use warnings;
-our $VERSION = '0.000018';
+our $VERSION = '0.000019';
 use utf8;
 
 # Class for $PPR::ERROR objects...
@@ -65,16 +65,22 @@ our $GRAMMAR = qr{
 (?(DEFINE)
 
     (?<PerlDocument>
-        \x{FEFF}?+      # Optional BOM marker
-        (?>(?&PerlOWS))
-        (?: (?>(?&PerlStatement)) (?&PerlOWS) )*+
+        \x{FEFF}?+                      # Optional BOM marker
+        (?&PerlStatementSequence)?+
+    ) # End of rule
+
+    (?<PerlStatementSequence>
+        (?&PerlPodSequence)?+
+        (?:
+            (?&PerlStatement)
+            (?&PerlPodSequence)?+
+        )*+
     ) # End of rule
 
     (?<PerlStatement>
-            (?: (?>(?&PerlPod))   (?&PerlOWS) )?+
         (?>
             (?: (?>(?&PerlLabel)) (?&PerlOWS) )?+
-            (?: (?>(?&PerlPod))   (?&PerlOWS) )?+
+            (?&PerlPodSequence)?+
             (?>
                 (?&PerlKeyword)
             |
@@ -115,7 +121,7 @@ our $GRAMMAR = qr{
                     (?: (?>(?&PerlNWS)) (?&PerlVersionNumber)
                         (?! (?>(?&PerlOWS)) (?> (?&PerlInfixBinaryOperator) | (?&PerlComma) | \? ) )
                     )?+
-                    (?: (?>(?&PerlNWS)) (?&PerlPod) )?+
+                    (?: (?>(?&PerlNWS)) (?&PerlPodSequence) )?+
                     (?: (?>(?&PerlOWS)) (?&PerlExpression) )?+
                 )
                 (?>(?&PerlOWS)) (?> ; | (?= \} | \z ))
@@ -201,7 +207,7 @@ our $GRAMMAR = qr{
            (?: (?>(?&PerlNWS)) (?&PerlVersionNumber)
                (?! (?>(?&PerlOWS)) (?> (?&PerlInfixBinaryOperator) | (?&PerlComma) | \? ) )
            )?+
-           (?: (?>(?&PerlNWS)) (?&PerlPod) )?+
+           (?: (?>(?&PerlNWS)) (?&PerlPodSequence) )?+
            (?: (?>(?&PerlOWS)) (?&PerlExpression) )?+
        )
        (?>(?&PerlOWS)) (?> ; | (?= \} | \z ))
@@ -228,7 +234,6 @@ our $GRAMMAR = qr{
         (?: (?>(?&PerlOWS)) (?>(?&PerlLowPrecedenceInfixOperator))
             (?>(?&PerlOWS))    (?&PerlLowPrecedenceNotExpression)  )*+
     ) # End of rule
-
 
     (?<PerlLowPrecedenceNotExpression>
         (?: not \b (?&PerlOWS) )*+  (?&PerlCommaList)
@@ -413,23 +418,23 @@ our $GRAMMAR = qr{
 
     (?<PerlControlBlock>
         (?> # Conditionals...
-            (?> if | unless ) \b            (?>(?&PerlOWS))
+            (?> if | unless ) \b                 (?>(?&PerlOWS))
             (?>(?&PerlParenthesesList))          (?>(?&PerlOWS))
             (?>(?&PerlBlock))
 
             (?:
-                                            (?>(?&PerlOWS))
-                (?: (?>(?&PerlPod))            (?&PerlOWS)   )*+
-                    elsif \b                (?>(?&PerlOWS))
-                    (?>(?&PerlParenthesesList))  (?>(?&PerlOWS))
-                    (?&PerlBlock)
+                                                 (?>(?&PerlOWS))
+                (?&PerlPodSequence)?+
+                elsif \b                     (?>(?&PerlOWS))
+                (?>(?&PerlParenthesesList))  (?>(?&PerlOWS))
+                (?&PerlBlock)
             )*+
 
             (?:
-                                            (?>(?&PerlOWS))
-                (?: (?>(?&PerlPod))            (?&PerlOWS)  )*+
-                    else \b                 (?>(?&PerlOWS))
-                    (?&PerlBlock)
+                                             (?>(?&PerlOWS))
+                (?&PerlPodSequence)?+
+                else \b                      (?>(?&PerlOWS))
+                (?&PerlBlock)
             )?+
 
         |   # Loops...
@@ -512,10 +517,7 @@ our $GRAMMAR = qr{
     ) # End of rule
 
     (?<PerlBlock>
-        \{                             (?>(?&PerlOWS))
-            (?: (?>(?&PerlStatement))     (?&PerlOWS)   )*+
-            (?: (?>(?&PerlPod))           (?&PerlOWS)   )?+
-        \}
+        \{  (?&PerlStatementSequence)?+  \}
     ) # End of rule
 
     (?<PerlCall>
@@ -1395,10 +1397,18 @@ our $GRAMMAR = qr{
         (?!)    # None, by default, but can be overridden in a composing regex
     ) # End of rule
 
+    (?<PerlPodSequence>
+        (?>(?&PerlOWS))  (?: (?>(?&PerlPod))  (?&PerlOWS) )*+
+    ) # End of rule
+
     (?<PerlPod>
-        ^ = [^\W\d]\w*+          # A line starting with =<identifier>
-        .*?                      # Up to the first...
-        ^ = cut \b [^\n]*+ $     # ...line starting with =cut
+        ^ = [^\W\d]\w*+             # A line starting with =<identifier>
+        .*?                         # Up to the first...
+        (?>
+            ^ = cut \b [^\n]*+ $    # ...line starting with =cut
+        |                           # or
+            \z                      # ...EOF
+        )
     ) # End of rule
 
 
@@ -1903,7 +1913,7 @@ PPR - Pattern-based Perl Recognizer
 
 =head1 VERSION
 
-This document describes PPR version 0.000018
+This document describes PPR version 0.000019
 
 
 =head1 SYNOPSIS
@@ -2204,6 +2214,12 @@ guaranteed to continue to exist in future releases. All such
 
 Matches an entire valid Perl document, including leading or trailing
 whitespace, comments, and any final C<__DATA__> or C<__END__> section.
+
+
+=head3 C<< (?&PerlStatementSequence) >>
+
+Matches zero-or-more valid Perl statements, separated by optional
+POD sequences.
 
 
 =head3 C<< (?&PerlStatement) >>
@@ -2774,8 +2790,14 @@ nor the same as a qualified identifier.
 
 =head3 C<< (?&PerlPod) >>
 
-Matches any contiguous set of POD directives,
-up to the first C<=cut>.
+Matches a single POD section containing any contiguous set of POD
+directives, up to the first C<=cut> or end-of-file.
+
+
+=head3 C<< (?&PerlPodSequence) >>
+
+Matches any sequence of POD sections,
+separated and /or surrounded by optional whitespace.
 
 
 =head3 C<< (?&PerlOWS) >>

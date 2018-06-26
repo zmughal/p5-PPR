@@ -164,3 +164,9 @@ Revision history for PPR
 
     * Fixed _uniq()
       (thanks Adriano!)
+
+
+0.000019  Tue Jun 26 19:33:17 2018
+
+    * Fixed parsing of multiple POD sections
+      (thanks Adriano!)
