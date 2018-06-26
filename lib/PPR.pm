@@ -15,7 +15,7 @@ BEGIN {
     }
 }
 use warnings;
-our $VERSION = '0.000019';
+our $VERSION = '0.000020';
 use utf8;
 
 # Class for $PPR::ERROR objects...
@@ -1871,7 +1871,11 @@ sub decomment {
                         (
                             ^ = [^\W\d]\w*+
                             .*?
-                            ^ = cut \b [^\n]*+ $
+                            (?>
+                                ^ = cut \b [^\n]*+ $
+                            |
+                                \z
+                            )
                         )
                         (?{
                             my $len = length($^N);
@@ -1913,7 +1917,7 @@ PPR - Pattern-based Perl Recognizer
 
 =head1 VERSION
 
-This document describes PPR version 0.000019
+This document describes PPR version 0.000020
 
 
 =head1 SYNOPSIS

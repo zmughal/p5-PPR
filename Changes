@@ -170,3 +170,11 @@ Revision history for PPR
 
     * Fixed parsing of multiple POD sections
       (thanks Adriano!)
+
+
+0.000020  Tue Jun 26 19:54:42 2018
+
+    * Oops, fixed decomment() too.
+
+    * Updates PPR::X approriately as well.
+
