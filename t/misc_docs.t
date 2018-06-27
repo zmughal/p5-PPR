@@ -23,7 +23,6 @@ while (my $str = <DATA>) {
             ok $str !~ m/\A \s* (?&PerlDocument) \s* \Z   $PPR::GRAMMAR/xo => $str;
         }
         else {
-            use Regexp::Debugger; 
             ok $str =~ m/\A \s* (?&PerlDocument) \s* \Z   $PPR::GRAMMAR/xo => $str;
         }
 }

@@ -15,7 +15,7 @@ BEGIN {
     }
 }
 use warnings;
-our $VERSION = '0.000020';
+our $VERSION = '0.000021';
 use utf8;
 
 # Class for $PPR::ERROR objects...
@@ -66,7 +66,7 @@ our $GRAMMAR = qr{
 
     (?<PerlDocument>
         \x{FEFF}?+                      # Optional BOM marker
-        (?&PerlStatementSequence)?+
+        (?&PerlStatementSequence)
     ) # End of rule
 
     (?<PerlStatementSequence>
@@ -79,6 +79,7 @@ our $GRAMMAR = qr{
 
     (?<PerlStatement>
         (?>
+            (?&PerlPodSequence)?+
             (?: (?>(?&PerlLabel)) (?&PerlOWS) )?+
             (?&PerlPodSequence)?+
             (?>
@@ -151,7 +152,7 @@ our $GRAMMAR = qr{
             \.\.\. (?>(?&PerlOWS))
             (?> ; | (?= \} | \z ))
 
-        | # Just a Label...
+        | # Just a label...
             (?>(?&PerlLabel)) (?>(?&PerlOWS))
             (?> ; | (?= \} | \z ))
 
@@ -425,15 +426,15 @@ our $GRAMMAR = qr{
             (?:
                                                  (?>(?&PerlOWS))
                 (?&PerlPodSequence)?+
-                elsif \b                     (?>(?&PerlOWS))
-                (?>(?&PerlParenthesesList))  (?>(?&PerlOWS))
+                elsif \b                         (?>(?&PerlOWS))
+                (?>(?&PerlParenthesesList))      (?>(?&PerlOWS))
                 (?&PerlBlock)
             )*+
 
             (?:
-                                             (?>(?&PerlOWS))
+                                                 (?>(?&PerlOWS))
                 (?&PerlPodSequence)?+
-                else \b                      (?>(?&PerlOWS))
+                else \b                          (?>(?&PerlOWS))
                 (?&PerlBlock)
             )?+
 
@@ -1917,7 +1918,7 @@ PPR - Pattern-based Perl Recognizer
 
 =head1 VERSION
 
-This document describes PPR version 0.000020
+This document describes PPR version 0.000021
 
 
 =head1 SYNOPSIS

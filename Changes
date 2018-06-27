@@ -178,3 +178,12 @@ Revision history for PPR
 
     * Updates PPR::X approriately as well.
 
+
+
+0.000021  Wed Jun 27 06:33:51 2018
+
+    * Removed spurious Regexp::Debugger dependency
+      (thanks, Adriano)
+
+    * Fixed edge case on POD/whitespace parsing
+      (thanks, Adriano)
