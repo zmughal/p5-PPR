@@ -233,3 +233,11 @@ Revision history for PPR
       line numbers are preserved through the operation.
       (thanks Albert)
 
+
+
+0.000027  Thu Jun 25 07:12:58 2020
+
+    * Tweaked handling of unary prefix operators to correctly 
+      identify '++' and '--' as atomic lexemes
+
+    * Added correct parsing of lexical subroutines

@@ -15,8 +15,9 @@ BEGIN {
     }
 }
 use warnings;
-our $VERSION = '0.000026';
+our $VERSION = '0.000027';
 use utf8;
+use List::Util qw<min max>;
 
 # Class for $PPR::ERROR objects...
 { package PPR::ERROR;
@@ -76,12 +77,12 @@ our $GRAMMAR = qr{
                 (?!)
             )
         )
-    ) # End of rule
+    ) # End of rule (?<PerlEntireDocument>)
 
     (?<PerlDocument>
         \x{FEFF}?+                      # Optional BOM marker
         (?&PerlStatementSequence)
-    ) # End of rule
+    ) # End of rule (?<PerlDocument>)
 
     (?<PerlStatementSequence>
         (?>(?&PerlPodSequence))
@@ -89,7 +90,7 @@ our $GRAMMAR = qr{
             (?&PerlStatement)
             (?&PerlPodSequence)
         )*+
-    ) # End of rule
+    ) # End of rule (?<PerlStatementSequence>)
 
     (?<PerlStatement>
         (?>
@@ -101,6 +102,7 @@ our $GRAMMAR = qr{
             |
                 # Inlined (?&PerlSubroutineDeclaration)
                 (?>
+                    (?: (?> my | our | state ) \b      (?>(?&PerlOWS)) )?+
                     sub \b                             (?>(?&PerlOWS))
                     (?>(?&PerlOldQualifiedIdentifier))    (?&PerlOWS)
                 |
@@ -183,10 +185,11 @@ our $GRAMMAR = qr{
                 (?!)
             )
         )
-    ) # End of rule
+    ) # End of rule (?<PerlStatement>)
 
     (?<PerlSubroutineDeclaration>
        (?>
+           (?: (?> my | our | state ) \b      (?>(?&PerlOWS)) )?+
            sub \b                             (?>(?&PerlOWS))
            (?>(?&PerlOldQualifiedIdentifier))    (?&PerlOWS)
        |
@@ -211,7 +214,7 @@ our $GRAMMAR = qr{
            (?: (?>(?&PerlParenthesesList))  (?&PerlOWS) )?+    # Parameter list
        )
        (?> ; | (?&PerlBlock) )
-    ) # End of rule
+    ) # End of rule (?<PerlSubroutineDeclaration>)
 
     (?<PerlUseStatement>
        (?: use | no ) (?>(?&PerlNWS))
@@ -226,33 +229,33 @@ our $GRAMMAR = qr{
            (?: (?>(?&PerlOWS)) (?&PerlExpression) )?+
        )
        (?>(?&PerlOWS)) (?> ; | (?= \} | \z ))
-    ) # End of rule
+    ) # End of rule (?<PerlUseStatement>)
 
     (?<PerlReturnExpression>
-       return \b (?>(?&PerlOWS)) (?&PerlExpression)
-    ) # End of rule
+       return \b (?: (?>(?&PerlOWS)) (?&PerlExpression) )?+
+    ) # End of rule (?<PerlReturnExpression>)
 
     (?<PerlReturnStatement>
        return \b (?: (?>(?&PerlOWS)) (?&PerlExpression) )?+
        (?>(?&PerlOWS)) (?> ; | (?= \} | \z ))
-    ) # End of rule
+    ) # End of rule (?<PerlReturnStatement>)
 
     (?<PerlPackageDeclaration>
        package
            (?>(?&PerlNWS)) (?>(?&PerlQualifiedIdentifier))
        (?: (?>(?&PerlNWS)) (?&PerlVersionNumber) )?+
            (?>(?&PerlOWS)) (?> ; | (?&PerlBlock) | (?= \} | \z ))
-    ) # End of rule
+    ) # End of rule (?<PerlPackageDeclaration>)
 
     (?<PerlExpression>
                             (?>(?&PerlLowPrecedenceNotExpression))
         (?: (?>(?&PerlOWS)) (?>(?&PerlLowPrecedenceInfixOperator))
             (?>(?&PerlOWS))    (?&PerlLowPrecedenceNotExpression)  )*+
-    ) # End of rule
+    ) # End of rule (?<PerlExpression>)
 
     (?<PerlLowPrecedenceNotExpression>
         (?: not \b (?&PerlOWS) )*+  (?&PerlCommaList)
-    ) # End of rule
+    ) # End of rule (?<PerlLowPrecedenceNotExpression>)
 
     (?<PerlCommaList>
                 (?>(?&PerlAssignment))  (?>(?&PerlOWS))
@@ -261,7 +264,7 @@ our $GRAMMAR = qr{
                 (?>(?&PerlAssignment))  (?>(?&PerlOWS))
         )*+
             (?: (?>(?&PerlComma))          (?&PerlOWS)   )*+
-    ) # End of rule
+    ) # End of rule (?<PerlCommaList>)
 
     (?<PerlAssignment>
                             (?>(?&PerlConditionalExpression))
@@ -269,7 +272,7 @@ our $GRAMMAR = qr{
             (?>(?&PerlOWS)) (?>(?&PerlAssignmentOperator))
             (?>(?&PerlOWS))    (?&PerlConditionalExpression)
         )*+
-    ) # End of rule
+    ) # End of rule (?<PerlAssignment>)
 
     (?<PerlScalarExpression>
     (?<PerlConditionalExpression>
@@ -278,14 +281,14 @@ our $GRAMMAR = qr{
             (?>(?&PerlOWS)) \? (?>(?&PerlOWS)) (?>(?&PerlAssignment))
             (?>(?&PerlOWS))  : (?>(?&PerlOWS))    (?&PerlConditionalExpression)
         )?+
-    ) # End of rule
-    ) # End of rule
+    ) # End of rule (?<PerlConditionalExpression>)
+    ) # End of rule (?<PerlScalarExpression>)
 
     (?<PerlBinaryExpression>
                             (?>(?&PerlPrefixPostfixTerm))
         (?: (?>(?&PerlOWS)) (?>(?&PerlInfixBinaryOperator))
             (?>(?&PerlOWS))    (?&PerlPrefixPostfixTerm) )*+
-    ) # End of rule
+    ) # End of rule (?<PerlBinaryExpression>)
 
     (?<PerlPrefixPostfixTerm>
         (?: (?>(?&PerlPrefixUnaryOperator))  (?&PerlOWS) )*+
@@ -326,7 +329,7 @@ our $GRAMMAR = qr{
             # End of inlining
         )?+
         (?: (?>(?&PerlOWS)) (?&PerlPostfixUnaryOperator) )?+
-    ) # End of rule
+    ) # End of rule (?<PerlPrefixPostfixTerm>)
 
     (?<PerlLvalue>
         (?>
@@ -341,12 +344,12 @@ our $GRAMMAR = qr{
                 (?: (?>(?&PerlComma)) (?&PerlOWS) )?+
             \)
         )
-    ) # End of rule
+    ) # End of rule (?<PerlLvalue>)
 
     (?<PerlTerm>
         (?>
             # Inlined (?&PerlReturnExpression)
-            return \b (?>(?&PerlOWS)) (?&PerlExpression)
+            return \b (?: (?>(?&PerlOWS)) (?&PerlExpression) )?+
             # End of inlining
         |
             # Inlined (?&PerlVariableDeclaration)
@@ -396,7 +399,7 @@ our $GRAMMAR = qr{
         |
             (?&PerlLiteral)
         )
-    ) # End of rule
+    ) # End of rule (?<PerlTerm>)
 
     (?<PerlTermPostfixDereference>
        (?>(?&PerlOWS)) -> (?>(?&PerlOWS))
@@ -429,7 +432,7 @@ our $GRAMMAR = qr{
            (?>(?&PerlOWS)) -> (?>(?&PerlOWS)) [\@%]
            (?> \* | (?&PerlArrayIndexer) | (?&PerlHashIndexer) )
        )?+
-    ) # End of rule
+    ) # End of rule (?<PerlTermPostfixDereference>)
 
     (?<PerlControlBlock>
         (?> # Conditionals...
@@ -501,7 +504,7 @@ our $GRAMMAR = qr{
             default                                           (?>(?&PerlOWS))
             (?&PerlBlock)
         )
-    ) # End of rule
+    ) # End of rule (?<PerlControlBlock>)
 
     (?<PerlFormat>
         format
@@ -522,18 +525,18 @@ our $GRAMMAR = qr{
             (?&PPR_newline_and_heredoc)
         )*+
         \. (?&PerlEndOfLine)
-    ) # End of rule
+    ) # End of rule (?<PerlFormat>)
 
     (?<PerlStatementModifier>
         (?> if | for(?:each)?+ | while | unless | until | when )
         \b
         (?>(?&PerlOWS))
         (?&PerlExpression)
-    ) # End of rule
+    ) # End of rule (?<PerlStatementModifier>)
 
     (?<PerlBlock>
         \{  (?>(?&PerlStatementSequence))  \}
-    ) # End of rule
+    ) # End of rule (?<PerlBlock>)
 
     (?<PerlCall>
         (?>
@@ -613,22 +616,22 @@ our $GRAMMAR = qr{
                     )
             )
         )
-    ) # End of rule
+    ) # End of rule (?<PerlCall>)
 
     (?<PerlVariableDeclaration>
         (?> my | state | our ) \b           (?>(?&PerlOWS))
         (?: (?&PerlQualifiedIdentifier)        (?&PerlOWS)  )?+
         (?>(?&PerlLvalue))                  (?>(?&PerlOWS))
         (?&PerlAttributes)?+
-    ) # End of rule
+    ) # End of rule (?<PerlVariableDeclaration>)
 
     (?<PerlDoBlock>
         do (?>(?&PerlOWS)) (?&PerlBlock)
-    ) # End of rule
+    ) # End of rule (?<PerlDoBlock>)
 
     (?<PerlEvalBlock>
         eval (?>(?&PerlOWS)) (?&PerlBlock)
-    ) # End of rule
+    ) # End of rule (?<PerlEvalBlock>)
 
     (?<PerlAttributes>
         :
@@ -645,36 +648,36 @@ our $GRAMMAR = qr{
                 (?= \( ) (?&PPR_quotelike_body)
             )?+
         )*+
-    ) # End of rule
+    ) # End of rule (?<PerlAttributes>)
 
     (?<PerlList>
         (?> (?&PerlParenthesesList) | (?&PerlCommaList) )
-    ) # End of rule
+    ) # End of rule (?<PerlList>)
 
     (?<PerlParenthesesList>
         \(  (?>(?&PerlOWS))  (?: (?>(?&PerlExpression)) (?&PerlOWS) )?+  \)
-    ) # End of rule
+    ) # End of rule (?<PerlParenthesesList>)
 
     (?<PerlAnonymousArray>
         \[  (?>(?&PerlOWS))  (?: (?>(?&PerlExpression)) (?&PerlOWS) )?+  \]
-    ) # End of rule
+    ) # End of rule (?<PerlAnonymousArray>)
 
     (?<PerlAnonymousHash>
         \{  (?>(?&PerlOWS))  (?: (?>(?&PerlExpression)) (?&PerlOWS) )?+ \}
-    ) # End of rule
+    ) # End of rule (?<PerlAnonymousHash>)
 
     (?<PerlArrayIndexer>
         \[                          (?>(?&PerlOWS))
             (?>(?&PerlExpression))  (?>(?&PerlOWS))
         \]
-    ) # End of rule
+    ) # End of rule (?<PerlArrayIndexer>)
 
     (?<PerlHashIndexer>
         \{  (?>(?&PerlOWS))
             (?: -?+ (?&PerlIdentifier) | (?&PerlExpression) )  # (Note: MUST allow backtracking here)
             (?>(?&PerlOWS))
         \}
-    ) # End of rule
+    ) # End of rule (?<PerlHashIndexer>)
 
     (?<PerlDiamondOperator>
         <<>>    # Perl 5.22 "double diamond"
@@ -689,19 +692,19 @@ our $GRAMMAR = qr{
             |   (?= \w) (?> for(?:each)?+ | while | if | unless | until | when )
             )
         )
-    ) # End of rule
+    ) # End of rule (?<PerlDiamondOperator>)
 
     (?<PerlComma>
         (?> , | => )
-    ) # End of rule
+    ) # End of rule (?<PerlComma>)
 
     (?<PerlPrefixUnaryOperator>
-        (?> [!\\+~] | \+\+  |  --  | - (?! (?&PPR_filetest_name) \b ) )
-    ) # End of rule
+        (?> \+\+ | -- | [!\\+~] | - (?! (?&PPR_filetest_name) \b ) )
+    ) # End of rule (?<PerlPrefixUnaryOperator>)
 
     (?<PerlPostfixUnaryOperator>
         (?> \+\+  |  -- )
-    ) # End of rule
+    ) # End of rule (?<PerlPostfixUnaryOperator>)
 
     (?<PerlInfixBinaryOperator>
         (?>  [=!][~=]
@@ -720,7 +723,7 @@ our $GRAMMAR = qr{
         |    \^              (?! [=]  )
         |    ~~
         )
-    ) # End of rule
+    ) # End of rule (?<PerlInfixBinaryOperator>)
 
     (?<PerlAssignmentOperator>
         (?:  [<>*&|/]{2}
@@ -729,11 +732,11 @@ our $GRAMMAR = qr{
         )?+
         =
         (?! > )
-    ) # End of rule
+    ) # End of rule (?<PerlAssignmentOperator>)
 
     (?<PerlLowPrecedenceInfixOperator>
         (?> or | and | xor )
-    ) # End of rule
+    ) # End of rule (?<PerlLowPrecedenceInfixOperator>)
 
     (?<PerlAnonymousSubroutine>
         sub \b
@@ -755,7 +758,7 @@ our $GRAMMAR = qr{
             (?: (?>(?&PerlParenthesesList))  (?&PerlOWS) )?+    # Parameter list
         )
         (?&PerlBlock)
-    ) # End of rule
+    ) # End of rule (?<PerlAnonymousSubroutine>)
 
     (?<PerlVariable>
         (?= [\$\@%] )
@@ -764,7 +767,7 @@ our $GRAMMAR = qr{
         |   (?&PerlHashAccess)
         |   (?&PerlArrayAccess)
         )
-    ) # End of rule
+    ) # End of rule (?<PerlVariable>)
 
     (?<PerlTypeglob>
         \*
@@ -792,7 +795,7 @@ our $GRAMMAR = qr{
             [\@%]
             (?> \* | (?&PerlArrayIndexer) | (?&PerlHashIndexer) )
         )?+
-    ) # End of rule
+    ) # End of rule (?<PerlTypeglob>)
 
     (?<PerlArrayAccess>
         (?>(?&PerlVariableArray))
@@ -805,7 +808,7 @@ our $GRAMMAR = qr{
             [\@%]
             (?> \* | (?&PerlArrayIndexer) | (?&PerlHashIndexer) )
         )?+
-    ) # End of rule
+    ) # End of rule (?<PerlArrayAccess>)
 
     (?<PerlArrayAccessNoSpace>
         (?>(?&PerlVariableArrayNoSpace))
@@ -818,14 +821,14 @@ our $GRAMMAR = qr{
             [\@%]
             (?> \* | (?&PerlArrayIndexer) | (?&PerlHashIndexer) )
         )?+
-    ) # End of rule
+    ) # End of rule (?<PerlArrayAccessNoSpace>)
 
     (?<PerlArrayAccessNoSpaceNoArrow>
         (?>(?&PerlVariableArray))
         (?:
             (?> (?&PerlArrayIndexer) | (?&PerlHashIndexer) | (?&PerlParenthesesList)  )
         )*+
-    ) # End of rule
+    ) # End of rule (?<PerlArrayAccessNoSpaceNoArrow>)
 
     (?<PerlHashAccess>
         (?>(?&PerlVariableHash))
@@ -838,7 +841,7 @@ our $GRAMMAR = qr{
             [\@%]
             (?> \* | (?&PerlArrayIndexer) | (?&PerlHashIndexer) )
         )?+
-    ) # End of rule
+    ) # End of rule (?<PerlHashAccess>)
 
     (?<PerlScalarAccess>
         (?>(?&PerlVariableScalar))
@@ -863,7 +866,7 @@ our $GRAMMAR = qr{
                 (?> \* | (?&PerlArrayIndexer) | (?&PerlHashIndexer) )
             )?+
         )?+
-    ) # End of rule
+    ) # End of rule (?<PerlScalarAccess>)
 
     (?<PerlScalarAccessNoSpace>
         (?>(?&PerlVariableScalarNoSpace))
@@ -887,14 +890,14 @@ our $GRAMMAR = qr{
                 (?> \* | (?&PerlArrayIndexer) | (?&PerlHashIndexer) )
             )?+
         )?+
-    ) # End of rule
+    ) # End of rule (?<PerlScalarAccessNoSpace>)
 
     (?<PerlScalarAccessNoSpaceNoArrow>
         (?>(?&PerlVariableScalarNoSpace))
         (?:
             (?> (?&PerlArrayIndexer) | (?&PerlHashIndexer) | (?&PerlParenthesesList) )
         )*+
-    ) # End of rule
+    ) # End of rule (?<PerlScalarAccessNoSpaceNoArrow>)
 
     (?<PerlVariableScalar>
         \$\$
@@ -929,7 +932,7 @@ our $GRAMMAR = qr{
         )
     |
         \$\#
-    ) # End of rule
+    ) # End of rule (?<PerlVariableScalar>)
 
     (?<PerlVariableScalarNoSpace>
         \$\$
@@ -961,7 +964,7 @@ our $GRAMMAR = qr{
         )
     |
         \$\#
-    ) # End of rule
+    ) # End of rule (?<PerlVariableScalarNoSpace>)
 
     (?<PerlVariableArray>
         \@     (?>(?&PerlOWS))
@@ -981,7 +984,7 @@ our $GRAMMAR = qr{
         |
             (?&PerlBlock)
         )
-    ) # End of rule
+    ) # End of rule (?<PerlVariableArray>)
 
     (?<PerlVariableArrayNoSpace>
         \@
@@ -1001,7 +1004,7 @@ our $GRAMMAR = qr{
         |
             (?&PerlBlock)
         )
-    ) # End of rule
+    ) # End of rule (?<PerlVariableArrayNoSpace>)
 
     (?<PerlVariableHash>
         %      (?>(?&PerlOWS))
@@ -1021,13 +1024,13 @@ our $GRAMMAR = qr{
         |
             (?&PerlBlock)
         )
-    ) # End of rule
+    ) # End of rule (?<PerlVariableHash>)
 
     (?<PerlLabel>
         (?! (?> [msy] | q[wrxq]?+ | tr ) \b )
         (?>(?&PerlIdentifier))
         : (?! : )
-    ) # End of rule
+    ) # End of rule (?<PerlLabel>)
 
     (?<PerlLiteral>
         (?> (?&PerlString)
@@ -1036,7 +1039,7 @@ our $GRAMMAR = qr{
         |   (?&PerlNumber)
         |   (?&PerlBareword)
         )
-    ) # End of rule
+    ) # End of rule (?<PerlLiteral>)
 
     (?<PerlString>
         (?>
@@ -1056,7 +1059,7 @@ our $GRAMMAR = qr{
         |
             (?&PerlVString)
         )
-    ) # End of rule
+    ) # End of rule (?<PerlString>)
 
     (?<PerlQuotelike>
         (?> (?&PerlString)
@@ -1067,7 +1070,7 @@ our $GRAMMAR = qr{
         |   (?&PerlQuotelikeS)
         |   (?&PerlQuotelikeTR)
         )
-    ) # End of rule
+    ) # End of rule (?<PerlQuotelike>)
 
     (?<PerlHeredoc>
         # Match the introducer...
@@ -1153,7 +1156,7 @@ our $GRAMMAR = qr{
             )
         )
 
-    ) # End of rule
+    ) # End of rule (?<PerlHeredoc>)
 
     (?<PerlQuotelikeQ>
         (?>
@@ -1163,7 +1166,7 @@ our $GRAMMAR = qr{
             (?> (?= [#] ) | (?! (?>(?&PerlOWS)) => ) )
             (?&PPR_quotelike_body)
         )
-    ) # End of rule
+    ) # End of rule (?<PerlQuotelikeQ>)
 
     (?<PerlQuotelikeQQ>
         (?>
@@ -1173,7 +1176,7 @@ our $GRAMMAR = qr{
             (?> (?= [#] ) | (?! (?>(?&PerlOWS)) => ) )
             (?&PPR_quotelike_body_interpolated)
         )
-    ) # End of rule
+    ) # End of rule (?<PerlQuotelikeQQ>)
 
     (?<PerlQuotelikeQW>
         (?>
@@ -1181,7 +1184,7 @@ our $GRAMMAR = qr{
             (?> (?= [#] ) | (?! (?>(?&PerlOWS)) => ) )
             (?&PPR_quotelike_body)
         )
-    ) # End of rule
+    ) # End of rule (?<PerlQuotelikeQW>)
 
     (?<PerlQuotelikeQX>
         (?>
@@ -1195,7 +1198,7 @@ our $GRAMMAR = qr{
                     (?&PPR_quotelike_body_interpolated)
                 )
         )
-    ) # End of rule
+    ) # End of rule (?<PerlQuotelikeQX>)
 
     (?<PerlQuotelikeS>
     (?<PerlSubstitution>
@@ -1221,8 +1224,8 @@ our $GRAMMAR = qr{
             (?>(?&PPR_quotelike_body_interpolated))
         )
         [msixpodualgcern]*+
-    ) # End of rule
-    ) # End of rule
+    ) # End of rule (?<PerlSubstitution>)
+    ) # End of rule (?<PerlQuotelikeS>)
 
     (?<PerlQuotelikeTR>
     (?<PerlTransliteration>
@@ -1245,8 +1248,8 @@ our $GRAMMAR = qr{
                (?&PPR_quotelike_body_interpolated)
         )
         [cdsr]*+
-    ) # End of rule
-    ) # End of rule
+    ) # End of rule (?<PerlTransliteration>)
+    ) # End of rule (?<PerlQuotelikeTR>)
 
     (?<PerlContextualQuotelikeM>
     (?<PerlContextualMatch>
@@ -1266,8 +1269,8 @@ our $GRAMMAR = qr{
                 (?&PPR_regex_body_interpolated)
             )
             [msixpodualgcn]*+
-        ) # End of rule
-        ) # End of rule
+        ) # End of rule (?<PerlMatch>)
+        ) # End of rule (?<PerlQuotelikeM>)
         (?=
             (?>(?&PerlOWS))
             (?> \z | [,;\}\])?] | => | : (?! :)
@@ -1275,15 +1278,15 @@ our $GRAMMAR = qr{
             |   (?= \w) (?> for(?:each)?+ | while | if | unless | until | when )
             )
         )
-    ) # End of rule
-    ) # End of rule
+    ) # End of rule (?<PerlContextualMatch>)
+    ) # End of rule (?<PerlContextualQuotelikeM>)
 
     (?<PerlQuotelikeQR>
         qr \b
         (?> (?= [#] ) | (?! (?>(?&PerlOWS)) => ) )
         (?>(?&PPR_regex_body_interpolated))
         [msixpodualn]*+
-    ) # End of rule
+    ) # End of rule (?<PerlQuotelikeQR>)
 
     (?<PerlRegex>
         (?>
@@ -1291,7 +1294,7 @@ our $GRAMMAR = qr{
         |
             (?&PerlQuotelikeQR)
         )
-    ) # End of rule
+    ) # End of rule (?<PerlRegex>)
 
     (?<PerlContextualRegex>
         (?>
@@ -1299,7 +1302,7 @@ our $GRAMMAR = qr{
         |
             (?&PerlQuotelikeQR)
         )
-    ) # End of rule
+    ) # End of rule (?<PerlContextualRegex>)
 
 
     (?<PerlBuiltinFunction>
@@ -1332,7 +1335,7 @@ our $GRAMMAR = qr{
             | _
         )
         \b
-    ) # End of rule
+    ) # End of rule (?<PerlBuiltinFunction>)
 
     (?<PerlNullaryBuiltinFunction>
         # Optimized to match any Perl builtin name, without backtracking...
@@ -1346,7 +1349,7 @@ our $GRAMMAR = qr{
             | _
         )
         \b
-    ) # End of rule
+    ) # End of rule (?<PerlNullaryBuiltinFunction>)
 
     (?<PerlVersionNumber>
         (?>
@@ -1355,11 +1358,11 @@ our $GRAMMAR = qr{
             (?>(?&PPR_digit_seq))
             (?: \. (?&PPR_digit_seq)?+ )*+
         )
-    ) # End of rule
+    ) # End of rule (?<PerlVersionNumber>)
 
     (?<PerlVString>
         v  (?>(?&PPR_digit_seq))  (?: \. (?&PPR_digit_seq) )*+
-    ) # End of rule
+    ) # End of rule (?<PerlVString>)
 
     (?<PerlNumber>
         [+-]?+
@@ -1377,25 +1380,25 @@ our $GRAMMAR = qr{
             )
             (?: [eE] [+-]?+ (?&PPR_digit_seq) )?+
         )
-    ) # End of rule
+    ) # End of rule (?<PerlNumber>)
 
     (?<PerlOldQualifiedIdentifier>
         (?> (?> :: | ' ) \w++  |  [^\W\d]\w*+ )  (?: (?> :: | ' )  \w++ )*+
-    ) # End of rule
+    ) # End of rule (?<PerlOldQualifiedIdentifier>)
 
     (?<PerlQualifiedIdentifier>
         (?>     ::       \w++  |  [^\W\d]\w*+ )  (?: (?> :: | ' )  \w++ )*+
-    ) # End of rule
+    ) # End of rule (?<PerlQualifiedIdentifier>)
 
     (?<PerlIdentifier>
                                   [^\W\d]\w*+
-    ) # End of rule
+    ) # End of rule (?<PerlIdentifier>)
 
     (?<PerlBareword>
         (?! (?> (?= \w )
                 (?> for(?:each)?+ | while | if | unless | until | use | no | given | when | sub | return )
             |   (?&PPR_named_op)
-            |   __ (?> END | DATA ) __ (?&PerlEndOfLine)
+            |   __ (?> END | DATA ) __ \b
             ) \b
             (?! (?>(?&PerlOWS)) => )
         )
@@ -1409,15 +1412,15 @@ our $GRAMMAR = qr{
         (?! \( )    # )
     |
         :: (?! \w | \{ )
-    ) # End of rule
+    ) # End of rule (?<PerlBareword>)
 
     (?<PerlKeyword>
         (?!)    # None, by default, but can be overridden in a composing regex
-    ) # End of rule
+    ) # End of rule (?<PerlKeyword>)
 
     (?<PerlPodSequence>
         (?>(?&PerlOWS))  (?: (?>(?&PerlPod))  (?&PerlOWS) )*+
-    ) # End of rule
+    ) # End of rule (?<PerlPodSequence>)
 
     (?<PerlPod>
         ^ = [^\W\d]\w*+             # A line starting with =<identifier>
@@ -1427,7 +1430,7 @@ our $GRAMMAR = qr{
         |                           # or
             \z                      # ...EOF
         )
-    ) # End of rule
+    ) # End of rule (?<PerlPod>)
 
 
     ##### Whitespace matching (part of API) #################################
@@ -1442,7 +1445,7 @@ our $GRAMMAR = qr{
         |
             __ (?> END | DATA ) __ \b .*+ \z
         )*+
-    ) # End of rule
+    ) # End of rule (?<PerlOWS>)
 
     (?<PerlNWS>
         (?:
@@ -1454,11 +1457,11 @@ our $GRAMMAR = qr{
         |
             __ (?> END | DATA ) __ \b .*+ \z
         )++
-    ) # End of rule
+    ) # End of rule (?<PerlNWS>)
 
     (?<PerlEndOfLine>
         \n
-    ) # End of rule
+    ) # End of rule (?<PerlEndOfLine>)
 
 
     ###### Internal components (not part of API) ##########################
@@ -2087,6 +2090,20 @@ sub _croak {
     Carp::croak(@_);
 }
 
+sub _report {
+    state $BUFFER = q{ } x 10;
+    state $depth = 0;
+    my ($msg, $increment) = @_;
+    $depth++ if $increment;
+    my $at = pos();
+    my $str = $BUFFER . $_ . $BUFFER;
+    my $pre  = substr($str, $at,    10);
+    my $post = substr($str, $at+10, 10);
+    tr/\n/ / for $pre, $post;
+    warn sprintf("%10s|%-10s|  %s%s\n", $pre, $post, q{ } x $depth, $msg);
+    $depth-- if !$increment;
+}
+
 1; # Magic true value required at end of module
 
 __END__
@@ -2098,7 +2115,7 @@ PPR - Pattern-based Perl Recognizer
 
 =head1 VERSION
 
-This document describes PPR version 0.000026
+This document describes PPR version 0.000027
 
 
 =head1 SYNOPSIS
