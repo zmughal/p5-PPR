@@ -241,3 +241,12 @@ Revision history for PPR
       identify '++' and '--' as atomic lexemes
 
     * Added correct parsing of lexical subroutines
+
+
+0.000028  Sun Jun 28 02:58:01 2020
+
+    * Corrected edge-case behaviour in parsing __END__ and __DATA__
+      by adding the (?&PerlOWSOrEND) rule
+      (many thanks, Branislav!)
+
+    * Corrected edge-case behaviour in parsing of s/.../.../e constructs
