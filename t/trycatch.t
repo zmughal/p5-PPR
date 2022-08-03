@@ -18,12 +18,12 @@ my $MATCH_A_PERL_DOCUMENT = qr{
     (?(DEFINE)
         # Redefine this subrule to match TryCatch syntax...
         (?<PerlTryCatchFinallyBlock>
-                try                                 (?>(?&PerlOWS))
-                (?>(?&PerlBlock))
-            (?:                                     (?>(?&PerlOWS))
-                catch                               (?>(?&PerlOWS))
-                \( (?>(?&PPR_balanced_parens)) \)   (?>(?&PerlOWS))
-                (?>(?&PerlBlock))
+                    try                                 (?>(?&PerlOWS))
+                    (?>(?&PerlBlock))
+            (?:                                         (?>(?&PerlOWS))
+                    catch                               (?>(?&PerlOWS))
+                (?: \( (?>(?&PPR_balanced_parens)) \)   (?>(?&PerlOWS)) )?+
+                    (?>(?&PerlBlock))
             )*+
         )
     )

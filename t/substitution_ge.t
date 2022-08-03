@@ -10,8 +10,6 @@ BEGIN{
         if $] > 5.020 && $] < 5.022;
 }
 
-plan tests => 24;
-
 use PPR::X;
 use re 'eval';
 
@@ -21,8 +19,27 @@ my $METAREGEX = qr{
     (?(DEFINE)
         (?<PerlInfixBinaryOperator>
             ((?&PerlStdInfixBinaryOperator))
-            (?{ ok 1 => "Found infix: $^N"
-                    if $^N eq '//' || $^N eq '||';
+            (?{
+                if ($^N eq '//' || $^N eq '||') {
+                    pass "Found infix: $^N";
+                }
+                else {
+                    pass "Interim-matched extra infix: $^N";
+                }
+            })
+        )
+
+        (?<PerlBinaryExpression>
+            ((?&PerlStdBinaryExpression))
+            (?{
+                if (   $^N eq q{$var{x} // croak()}
+                    || $^N eq q{$var{x} || croak()} )
+                {
+                    pass "Found correct binary expression: $^N";
+                }
+                else {
+                    pass "Interim-matched extra binary expression: $^N";
+                }
             })
         )
     )
@@ -30,20 +47,25 @@ my $METAREGEX = qr{
     $PPR::X::GRAMMAR
 }xms;
 
-ok q{ s<(RE)>< $var{$1} // croak() >ge } =~ $METAREGEX  =>  'Matched METAREGEX';
-ok q{ s[(RE)][ $var{$1} // croak() ]ge } =~ $METAREGEX  =>  'Matched METAREGEX';
-ok q{ s{(RE)}{ $var{$1} // croak() }ge } =~ $METAREGEX  =>  'Matched METAREGEX';
-ok q{ s((RE))( $var{$1} // croak() )ge } =~ $METAREGEX  =>  'Matched METAREGEX';
-ok q{ s"(RE)"  $var{$1} // croak() "ge } =~ $METAREGEX  =>  'Matched METAREGEX';
-ok q{ s%(RE)%  $var{$1} // croak() %ge } =~ $METAREGEX  =>  'Matched METAREGEX';
-ok q{ s'(RE)'  $var{$1} // croak() 'ge } =~ $METAREGEX  =>  'Matched METAREGEX';
-ok q{ s+(RE)+  $var{$1} // croak() +ge } =~ $METAREGEX  =>  'Matched METAREGEX';
-ok q{ s,(RE),  $var{$1} // croak() ,ge } =~ $METAREGEX  =>  'Matched METAREGEX';
-ok q{ s/(RE)/  $var{$1} || croak() /ge } =~ $METAREGEX  =>  'Matched METAREGEX';
-ok q{ s@(RE)@  $var{$1} // croak() @ge } =~ $METAREGEX  =>  'Matched METAREGEX';
-ok q{ s|(RE)|  $var{$1} // croak() |ge } =~ $METAREGEX  =>  'Matched METAREGEX';
+for my $src_code (<DATA>) {
+    subtest $src_code => sub {
+        ok $src_code =~ $METAREGEX  =>  'Matched METAREGEX';
+
+    }
+}
 
 done_testing();
 
-
-
+__DATA__
+s<(RE)>< $var{x} // croak() >ge
+s[(RE)][ $var{x} // croak() ]ge
+s{(RE)}{ $var{x} // croak() }ge
+s((RE))( $var{x} // croak() )ge
+s"(RE)"  $var{x} // croak() "ge
+s%(RE)%  $var{x} // croak() %ge
+s'(RE)'  $var{x} // croak() 'ge
+s+(RE)+  $var{x} // croak() +ge
+s,(RE),  $var{x} // croak() ,ge
+s/(RE)/  $var{x} || croak() /ge
+s@(RE)@  $var{x} // croak() @ge
+s|(RE)|  $var{x} // croak() |ge

@@ -298,3 +298,15 @@ Revision history for PPR
         / (?&PerlScalarAccess) /x     / (?&PerlScalarAccess) (?&PerlTermPostfixDerefence) /x
 
         / (?&PerlArrayAccess)  /x     / (?&PerlArrayAccess)  (?&PerlTermPostfixDerefence) /x
+
+
+0.001001  Wed Aug  3 01:52:51 2022
+
+    * Added try/catch/finally/defer to the list of keywords
+      that are never treated as barewords
+
+    * Corrected parsing of try/catch syntax
+      (the catch block is not optional!)
+
+    * Updated workarounds for parsing code that uses Try::Tiny and TryCatch
+      in line with the above changes

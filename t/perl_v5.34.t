@@ -4,7 +4,7 @@ use warnings;
 
 use Test::More;
 
-plan tests => 4;
+plan tests => 3;
 
 BEGIN{
     BAIL_OUT "A bug in Perl 5.20 regex compilation prevents the use of PPR under that release"
@@ -19,15 +19,6 @@ feature '(Precheck that "vampire for" is valid)'
 
 feature 'Octal constants'
      => q{{ my $x = 0o7777; }};
-
-feature 'Try blocks'
-     => q{{
-            try {
-                do_something_risky();
-            }
-
-            for (;;) {}
-        }};
 
 feature 'Try/catch blocks'
      => q{{

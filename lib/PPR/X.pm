@@ -15,7 +15,7 @@ BEGIN {
     }
 }
 use warnings;
-our $VERSION = '0.000028';
+our $VERSION = '0.001000';
 use utf8;
 use List::Util qw<min max>;
 
@@ -1431,7 +1431,10 @@ our $GRAMMAR = qr{
 
         (?<PerlBareword>   (?<PerlStdBareword>
             (?! (?> (?= \w )
-                    (?> for(?:each)?+ | while | if | unless | until | use | no | given | when | sub | return | my | our | state )
+                    (?> for(?:each)?+ | while | if      | unless | until | use | no
+                    |   given         | when  | sub     | return | my    | our | state
+                    |   try           | catch | finally | defer
+                    )
                 |   (?&PPR_X_named_op)
                 |   __ (?> END | DATA ) __ \b
                 ) \b
@@ -1522,8 +1525,9 @@ our $GRAMMAR = qr{
 
         (?<PPR_X_non_reserved_identifier>
             (?! (?>
-                for(?:each)?+ | while | if | unless | until | given | when | default
-                |  sub | format | use | no | my | our | state
+                   for(?:each)?+ | while   | if    | unless | until | given | when | default
+                |  sub | format  | use     | no    | my     | our   | state
+                |  try | catch   | finally | defer
                 |  (?&PPR_X_named_op)
                 |  [msy] | q[wrxq]?+ | tr
                 |   __ (?> END | DATA ) __
@@ -2726,7 +2730,7 @@ PPR::X - Pattern-based Perl Recognizer
 
 =head1 VERSION
 
-This document describes PPR::X version 0.000028
+This document describes PPR::X version 0.001000
 
 
 =head1 SYNOPSIS
@@ -3224,34 +3228,64 @@ Matches a C<eval>-block expression.
 
 Matches an C<try> block, followed by an option C<catch> block,
 followed by an optional C<finally> block, using the built-in
-syntaxes introduced in Perl v5.34 and v5.36.
+syntax introduced in Perl v5.34 and v5.36.
 
-Note that if your code uses one of the many CPAN modules (e.g.
-Try::Tiny or TryCatch) that provided try/catch behaviours
-prior to Perl v5.34, then you will most likely need to
-override this subrule to match the alternate try/catch syntax
-provided by that module.
+Note that if your code uses one of the many CPAN modules
+(such as C<Try::Tiny> or C<TryCatch>) that provided try/catch behaviours
+prior to Perl v5.34, then you will most likely need to override
+this subrule to match the alternate C<try>/C<catch> syntax
+provided by your preferred module.
 
-For example, if your code uses Try::Tiny, you would need to
-alter the PPR::X parser for C<try> blocks, by using PPR::X
-instead of PPR::X, like so:
-
-    use PPR::X;
+For example, if your code uses the C<TryCatch> module, you would
+need to alter the PPR::X parser by explicitly redefining the subrule
+for C<try> blocks, with something like:
 
     my $MATCH_A_PERL_DOCUMENT = qr{
-        (?&PerlEntireDocument)
+
+        \A (?&PerlEntireDocument) \Z
 
         (?(DEFINE)
+            # Redefine this subrule to match TryCatch syntax...
             (?<PerlTryCatchFinallyBlock>
-                    try      (?&PerlOWS)  (?&PerlBlock)
-                (?> catch    (?&PerlOWS)  (?&PerlBlock)  )?
-                (?> finally  (?&PerlOWS)  (?&PerlBlock)  )?
+                    try                                  (?>(?&PerlOWS))
+                    (?>(?&PerlBlock))
+                (?:                                      (?>(?&PerlOWS))
+                    catch                                (?>(?&PerlOWS))
+                    \( (?>(?&PPR_X_balanced_parens)) \)    (?>(?&PerlOWS))
+                    (?>(?&PerlBlock))
+                )*+
             )
         )
 
-        $PPR::X::GRAMMAR;
+        $PPR::X::GRAMMAR
     }xms;
 
+Note that the popular C<Try::Tiny> module actually implements C<try>/C<catch>
+as a normally parsed Perl subroutine call expression, rather than a statement.
+This means that the unmodified PPR::X grammar can successfully parse all the
+module's constructs.
+
+However, the unmodified PPR::X grammar may misclassify some C<Try::Tiny> usages
+as being built-in Perl v5.36 C<try> blocks followed by an unrelated call to
+the C<catch> subroutine, rather than identifying the C<try> and C<catch> as
+a single expression containing two subroutine calls.
+
+If that difference in interpretation matters to you, you can deactivate
+the built-in Perl v5.36 C<try>/C<catch> syntax entirely, like so:
+
+    my $MATCH_A_PERL_DOCUMENT = qr{
+        \A (?&PerlEntireDocument) \Z
+
+        (?(DEFINE)
+            # Turn off built-in try/catch syntax...
+            (?<PerlTryCatchFinallyBlock>   (?!)  )
+        )
+
+        $PPR::X::GRAMMAR
+    }xms;
+
+For more details and options for modifying PPR::X grammars in this way,
+see also the documentation of the C<PPR_X> module.
 
 
 =head3 C<< (?&PerlStatementModifier) >>
