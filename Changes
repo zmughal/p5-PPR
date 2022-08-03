@@ -310,3 +310,8 @@ Revision history for PPR
 
     * Updated workarounds for parsing code that uses Try::Tiny and TryCatch
       in line with the above changes
+
+
+0.001002  Wed Aug  3 02:04:01 2022
+
+    * Rereleasing with ::X and ::Debug variations properly updated

@@ -15,7 +15,7 @@ BEGIN {
     }
 }
 use warnings;
-our $VERSION = '0.001000';
+our $VERSION = '0.001001';
 use utf8;
 use List::Util qw<min max>;
 
@@ -613,13 +613,10 @@ our $GRAMMAR = qr{
 
                 try \b                                (?>(?&PerlOWS))
                 (?>(?&PerlBlock))
-
-            (?:
                                                       (?>(?&PerlOWS))
                 catch \b                              (?>(?&PerlOWS))
                 \(  (?>(?&PerlVariableScalar))  \)    (?>(?&PerlOWS))
                 (?>(?&PerlBlock))
-            )?+
 
             (?:
                                                       (?>(?&PerlOWS))
@@ -2730,7 +2727,7 @@ PPR::X - Pattern-based Perl Recognizer
 
 =head1 VERSION
 
-This document describes PPR::X version 0.001000
+This document describes PPR::X version 0.001001
 
 
 =head1 SYNOPSIS
@@ -3251,7 +3248,7 @@ for C<try> blocks, with something like:
                     (?>(?&PerlBlock))
                 (?:                                      (?>(?&PerlOWS))
                     catch                                (?>(?&PerlOWS))
-                    \( (?>(?&PPR_X_balanced_parens)) \)    (?>(?&PerlOWS))
+                (?: \( (?>(?&PPR_X_balanced_parens)) \)    (?>(?&PerlOWS))  )?+
                     (?>(?&PerlBlock))
                 )*+
             )
@@ -3279,6 +3276,22 @@ the built-in Perl v5.36 C<try>/C<catch> syntax entirely, like so:
         (?(DEFINE)
             # Turn off built-in try/catch syntax...
             (?<PerlTryCatchFinallyBlock>   (?!)  )
+
+            # Decanonize 'try' and 'catch' as reserved words ineligible for sub names...
+            (?<PPR_X_X_non_reserved_identifier>
+                (?! (?> for(?:each)?+ | while   | if    | unless | until | given | when   | default
+                    |   sub | format  | use     | no    | my     | our   | state  | defer | finally
+                    # Note: Removed 'try' and 'catch' which appear here in the original subrule
+                    |   (?&PPR_X_X_named_op)
+                    |   [msy] | q[wrxq]?+ | tr
+                    |   __ (?> END | DATA ) __
+                    )
+                    \b
+                )
+                (?>(?&PerlQualifiedIdentifier))
+                (?! :: )
+            )
+
         )
 
         $PPR::X::GRAMMAR
