@@ -883,11 +883,14 @@ our $GRAMMAR = qr{
                         |    (?&PerlHashIndexer)
                         )++
 
-                    |   # An array or hash slice or k/v slice
-                        [\@%] (?> (?>(?&PerlArrayIndexer)) | (?>(?&PerlHashIndexer)) )
+                    |   # An array or hash slice (no k/v slice)
+                        \@ (?> (?>(?&PerlArrayIndexer)) | (?>(?&PerlHashIndexer)) )
 
                     |   # An array or scalar deref
                         [\@\$] \*
+
+                    |   # An array max-index lookup...
+                        \$\#\*
                     )
                 )++
             )?+
@@ -947,11 +950,14 @@ our $GRAMMAR = qr{
                         |    (?&PerlHashIndexer)
                         )++
 
-                    |   # An array or hash slice or k/v slice
-                        [\@%] (?> (?>(?&PerlArrayIndexer)) | (?>(?&PerlHashIndexer)) )
+                    |   # An array or hash slice (no k/v slice)
+                        \@ (?> (?>(?&PerlArrayIndexer)) | (?>(?&PerlHashIndexer)) )
 
                     |   # An array or scalar deref
                         [\@\$] \*
+
+                    |   # An array max-index lookup...
+                        \$\#\*
                     )
                 )++
             )?+
