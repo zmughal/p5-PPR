@@ -15,7 +15,7 @@ BEGIN {
     }
 }
 use warnings;
-our $VERSION = '0.001002';
+our $VERSION = '0.001003';
 use utf8;
 use List::Util qw<min max>;
 
@@ -872,26 +872,32 @@ our $GRAMMAR = qr{
             # Optional arrowless access(es) to begin
             (?: (?&PerlArrayIndexer) | (?&PerlHashIndexer) )*+
 
-            # Then arrowed accesses (this is an inlined subset of (?&PerlTermPostfixDereference))...
+            # Then any number of optional arrowed accesses
+            # (this is an inlined subset of (?&PerlTermPostfixDereference))...
             (?:
-                # Must have at least one arrowed dereference...
-                (?:
-                    ->
-                    (?>
-                        # A series of simple brackets can omit interstitial arrows...
-                        (?:  (?&PerlArrayIndexer)
-                        |    (?&PerlHashIndexer)
-                        )++
+                ->
+                (?>
+                    # A series of simple brackets can omit interstitial arrows...
+                    (?:  (?&PerlArrayIndexer)
+                    |    (?&PerlHashIndexer)
+                    )++
 
-                    |   # An array or hash slice or k/v slice
-                        [\@%] (?> (?>(?&PerlArrayIndexer)) | (?>(?&PerlHashIndexer)) )
+                |   # An array or hash slice...
+                    \@ (?> (?>(?&PerlArrayIndexer)) | (?>(?&PerlHashIndexer)) )
+                )
+            )*+
 
-                    |   # An array or scalar deref
-                        [\@\$] \*
-                    )
-                )++
+            # Followed by at most one of these terminal arrowed dereferences...
+            (?:
+                ->
+                (?>
+                    # An array or scalar deref...
+                    [\@\$] \*
+
+                |   # An array count deref...
+                    \$ \# \*
+                )
             )?+
-            # End of inlining
         ) # End of rule (?<PerlArrayAccessNoSpace>)
 
         (?<PerlArrayAccessNoSpaceNoArrow>
@@ -937,25 +943,32 @@ our $GRAMMAR = qr{
             # Optional arrowless access(es) to begin...
             (?: (?&PerlArrayIndexer) | (?&PerlHashIndexer) )*+
 
-            # Then arrowed accesses (this is an inlined subset of (?&PerlTermPostfixDereference))...
+            # Then any nuber of arrowed accesses
+            # (this is an inlined subset of (?&PerlTermPostfixDereference))...
             (?:
-                (?:
-                    ->
-                    (?>
-                        # A series of simple brackets can omit interstitial arrows...
-                        (?:  (?&PerlArrayIndexer)
-                        |    (?&PerlHashIndexer)
-                        )++
+                ->
+                (?>
+                    # A series of simple brackets can omit interstitial arrows...
+                    (?:  (?&PerlArrayIndexer)
+                    |    (?&PerlHashIndexer)
+                    )++
 
-                    |   # An array or hash slice or k/v slice
-                        [\@%] (?> (?>(?&PerlArrayIndexer)) | (?>(?&PerlHashIndexer)) )
+                |   # An array or hash slice...
+                    \@ (?> (?>(?&PerlArrayIndexer)) | (?>(?&PerlHashIndexer)) )
+                )
+            )*+
 
-                    |   # An array or scalar deref
-                        [\@\$] \*
-                    )
-                )++
+            # Followed by at most one of these terminal arrowed dereferences...
+            (?:
+                ->
+                (?>
+                    # An array or scalar deref...
+                    [\@\$] \*
+
+                |   # An array count deref...
+                    \$ \# \*
+                )
             )?+
-            # End of inlining
         ) # End of rule (?<PerlScalarAccessNoSpace>)
 
         (?<PerlScalarAccessNoSpaceNoArrow>
@@ -2781,7 +2794,7 @@ PPR - Pattern-based Perl Recognizer
 
 =head1 VERSION
 
-This document describes PPR version 0.001002
+This document describes PPR version 0.001003
 
 
 =head1 SYNOPSIS

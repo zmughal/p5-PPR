@@ -83,5 +83,6 @@ t/regex_interpolation.t
 t/substitution_ge.t
 t/trycatch.t
 t/trytiny.t
+t/postfix_deref_qq.t
 META.yml                                 Module YAML meta-data (added by MakeMaker)
 META.json                                Module JSON meta-data (added by MakeMaker)
