@@ -101,6 +101,8 @@ my $scalar_access = qr{
     $PPR::X::GRAMMAR
 }xms;
 
+# Ignore $* and @*. $* is deprecated/fatal and @* is the array part of $*.
+my $ignore_globals_qr = qr/^[\@\$]\*$/;
 for my $case (@cases) {
     my ($valid, $code, $pieces, $pattern) = @$case;
     subtest "Case << $code >> which is @{[ $valid ? 'valid' : 'invalid' ]} code" => sub {
@@ -118,7 +120,9 @@ for my $case (@cases) {
 
             local @got_vars = ();
             ok $code =~ /$scalar_access/xg, 'PPR matches valid code';
-            my @expected_vars = map { $_->[0] eq 'v' ? $_->[1] : () } @$pieces;
+            my @expected_vars =
+                grep { $_ !~ $ignore_globals_qr }
+                map { $_->[0] eq 'v' ? $_->[1] : () } @$pieces;
 
             my $all_evaluatable = all { defined } map {
                 my $val = eval $_;
@@ -126,6 +130,7 @@ for my $case (@cases) {
             } @expected_vars;
             ok $all_evaluatable, "all variables evaluate outside of interpolation";
 
+            @got_vars = grep { $_ !~ $ignore_globals_qr } @got_vars;
             cmp_bag \@got_vars, \@expected_vars, "PPR found variables in interpolation";
 
             my $got_interpolated = eval $code;
