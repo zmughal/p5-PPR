@@ -324,3 +324,9 @@ Revision history for PPR
       within interpolating quotelikes
       (Thanks, Zaki!)
 
+
+
+0.001004  Mon Aug  8 23:24:09 2022
+
+    * Fixed edge case of 'state' variable declarations
+      (Thanks, Zaki!)

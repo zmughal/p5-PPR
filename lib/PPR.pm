@@ -15,7 +15,7 @@ BEGIN {
     }
 }
 use warnings;
-our $VERSION = '0.001003';
+our $VERSION = '0.001004';
 use utf8;
 use List::Util qw<min max>;
 
@@ -360,7 +360,7 @@ our $GRAMMAR = qr{
                     (?&PerlCall)
               |
                     # Inlined (?&PerlVariableDeclaration)
-                    (?> my | state | our ) \b           (?>(?&PerlOWS))
+                    (?> my | our | state ) \b           (?>(?&PerlOWS))
                     (?: (?&PerlQualifiedIdentifier)        (?&PerlOWS)  )?+
                     (?>(?&PerlLvalue))                  (?>(?&PerlOWSOrEND))
                     (?&PerlAttributes)?+
@@ -649,7 +649,7 @@ our $GRAMMAR = qr{
         ) # End of rule (?<PerlCall>)
 
         (?<PerlVariableDeclaration>
-            (?> my | state | our ) \b           (?>(?&PerlOWS))
+            (?> my | our | state ) \b           (?>(?&PerlOWS))
             (?: (?&PerlQualifiedIdentifier)        (?&PerlOWS)  )?+
             (?>(?&PerlLvalue))                  (?>(?&PerlOWS))
             (?&PerlAttributes)?+
@@ -1408,7 +1408,7 @@ our $GRAMMAR = qr{
             # Optimized to match any Perl builtin name, without backtracking...
             (?=[^\W\d]) # Skip if possible
             (?>
-                s(?>e(?>t(?>(?>(?>(?>hos|ne)t|gr)en|s(?>erven|ockop))t|p(?>r(?>iority|otoent)|went|grp))|m(?>ctl|get|op)|ek(?>dir)?|lect|nd)|y(?>s(?>write|call|open|read|seek|tem)|mlink)|h(?>m(?>write|read|ctl|get)|utdown|ift)|o(?>cket(?>pair)?|rt)|p(?>li(?>ce|t)|rintf)|(?>cala|ubst)r|t(?>ate?|udy)|leep|rand|qrt|ay|in)
+                s(?>e(?>t(?>(?>(?>(?>hos|ne)t|gr)en|s(?>erven|ockop))t|p(?>r(?>iority|otoent)|went|grp))|m(?>ctl|get|op)|ek(?>dir)?|lect|nd)|y(?>s(?>write|call|open|read|seek|tem)|mlink)|h(?>m(?>write|read|ctl|get)|utdown|ift)|o(?>cket(?>pair)?|rt)|p(?>li(?>ce|t)|rintf)|(?>cala|ubst)r|t(?>at|udy)|leep|rand|qrt|ay|in)
                 | g(?>et(?>p(?>r(?>oto(?>byn(?>umber|ame)|ent)|iority)|w(?>ent|nam|uid)|eername|grp|pid)|s(?>erv(?>by(?>name|port)|ent)|ock(?>name|opt))|host(?>by(?>addr|name)|ent)|net(?>by(?>addr|name)|ent)|gr(?>ent|gid|nam)|login|c)|mtime|lob|oto|rep)
                 | r(?>e(?>ad(?>lin[ek]|pipe|dir)?|(?>quir|vers|nam)e|winddir|turn|set|cv|do|f)|index|mdir|and)
                 | c(?>h(?>o(?>m?p|wn)|r(?>oot)?|dir|mod)|o(?>n(?>tinue|nect)|s)|lose(?>dir)?|aller|rypt)
@@ -2794,7 +2794,7 @@ PPR - Pattern-based Perl Recognizer
 
 =head1 VERSION
 
-This document describes PPR version 0.001003
+This document describes PPR version 0.001004
 
 
 =head1 SYNOPSIS
