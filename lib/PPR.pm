@@ -15,7 +15,7 @@ BEGIN {
     }
 }
 use warnings;
-our $VERSION = '0.001004';
+our $VERSION = '0.001005';
 use utf8;
 use List::Util qw<min max>;
 
@@ -1131,13 +1131,13 @@ our $GRAMMAR = qr{
             |
                 '  [^'\\]*+  (?: \\. [^'\\]*+ )*+ '
             |
-                (?: q \b | qq (?= (?>(?&PerlOWS)) ' ) )
+                q \b
                 (?> (?= [#] ) | (?! (?>(?&PerlOWS)) => ) )
                 (?&PPR_quotelike_body)
             |
                 qq \b
                 (?> (?= [#] ) | (?! (?>(?&PerlOWS)) => ) )
-                (?&PPR_quotelike_body_interpolated)
+                (?&PPR_quotelike_body_always_interpolated)
             |
                 (?&PerlHeredoc)
             |
@@ -1258,7 +1258,7 @@ our $GRAMMAR = qr{
             |
                 \b qq \b
                 (?> (?= [#] ) | (?! (?>(?&PerlOWS)) => ) )
-                (?&PPR_quotelike_body_interpolated)
+                (?&PPR_quotelike_body_always_interpolated)
             )
         ) # End of rule (?<PerlQuotelikeQQ>)
 
@@ -1823,6 +1823,11 @@ our $GRAMMAR = qr{
             )
         ) # End of rule (?<PPR_quotelike_body_unclosed>)
 
+        (?<PPR_quotelike_body_always_interpolated>
+            (?>(?&PPR_quotelike_body_always_interpolated_unclosed))
+            \S   # (Note: Don't have to test that this matches; the preceding subrule already did that)
+        ) # End of rule (?<PPR_quotelike_body_always_interpolated>)
+
         (?<PPR_quotelike_body_interpolated>
             (?>(?&PPR_quotelike_body_interpolated_unclosed))
             \S   # (Note: Don't have to test that this matches; the preceding subrule already did that)
@@ -2166,6 +2171,124 @@ our $GRAMMAR = qr{
 
             (?&PPR_regex_body_unclosed)
         ) # End of rule (?<PPR_regex_body_interpolated_unclosed>)
+
+        (?<PPR_quotelike_body_always_interpolated_unclosed>
+            # Start by working out where it actually ends (ignoring interpolations)...
+            (?=
+                (?>
+                    [#]
+                    [^#\\\n\$\@]*+
+                    (?:
+                        (?>
+                            \\.
+                        |
+                            (?&PPR_newline_and_heredoc)
+                        |
+                            (?= \$ (?! [\s#] ) )  (?&PerlScalarAccessNoSpace)
+                        |
+                            (?= \@ (?! [\s#] ) )  (?&PerlArrayAccessNoSpace)
+                        |
+                            [\$\@]
+                        )
+                        [^#\\\n\$\@]*+
+                    )*+
+                    (?= [#] )
+                |
+                    (?>(?&PerlOWS))
+                    (?>
+                        \{  (?>(?&PPR_balanced_curlies_interpolated))    (?= \} )
+                    |
+                        \[  (?>(?&PPR_balanced_squares_interpolated))    (?= \] )
+                    |
+                        \(  (?>(?&PPR_balanced_parens_interpolated))     (?= \) )
+                    |
+                        <   (?>(?&PPR_balanced_angles_interpolated))     (?=  > )
+                    |
+                        (\X) (??{ exists $PPR::_QLD_CLOSE_FOR{$^N} ? '' : '(?!)' })
+                        (?{ local $PPR::_qld_open  = $^N;
+                            local $PPR::_qld_close = $PPR::_QLD_CLOSE_FOR{$PPR::_qld_open};
+                            local $PPR::_qld_not_special
+                                = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n]";
+                            local $PPR::_qld_not_special_or_sigil
+                                = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n\\\$\\\@]";
+                            local $PPR::_qld_not_special_in_regex_var
+                                = "[^$PPR::_qld_open$PPR::_qld_close\\s(|)]";
+                        })
+                        (?>(?&PPR_balanced_unicode_delims_interpolated))
+                        (?=  (??{$PPR::_qld_close}) )
+                    |
+                        \\
+                            [^\\\n\$\@]*+
+                            (?:
+                                (?>
+                                    (?&PPR_newline_and_heredoc)
+                                |
+                                    (?= \$ (?! [\s\\] ) )  (?&PerlScalarAccessNoSpace)
+                                |
+                                    (?= \@ (?! [\s\\] ) )  (?&PerlArrayAccessNoSpace)
+                                |
+                                    [\$\@]
+                                )
+                                [^\\\n\$\@]*+
+                            )*+
+                        (?= \\ )
+                    |
+                        /
+                            [^\\/\n\$\@]*+
+                            (?:
+                                (?>
+                                    \\.
+                                |
+                                    (?&PPR_newline_and_heredoc)
+                                |
+                                    (?= \$ (?! [\s/] ) )  (?&PerlScalarAccessNoSpace)
+                                |
+                                    (?= \@ (?! [\s/] ) )  (?&PerlArrayAccessNoSpace)
+                                |
+                                    [\$\@]
+                                )
+                                [^\\/\n\$\@]*+
+                            )*+
+                        (?= / )
+                    |
+                        -
+                            (?:
+                                \\.
+                            |
+                                (?&PPR_newline_and_heredoc)
+                            |
+                                (?:
+                                    (?= \$ (?! [\s-] ) )  (?&PerlScalarAccessNoSpaceNoArrow)
+                                |
+                                    (?= \@ (?! [\s-] ) )  (?&PerlArrayAccessNoSpaceNoArrow)
+                                |
+                                    [^-]
+                                )
+                            )*+
+                        (?= - )
+                    |
+                        (?<PPR_qldel> \S )
+                            (?:
+                                \\.
+                            |
+                                (?&PPR_newline_and_heredoc)
+                            |
+                                (?! \g{PPR_qldel} )
+                                (?:
+                                    (?= \$ (?! \g{PPR_qldel} | \s ) )  (?&PerlScalarAccessNoSpace)
+                                |
+                                    (?= \@ (?! \g{PPR_qldel} | \s ) )  (?&PerlArrayAccessNoSpace)
+                                |
+                                    .
+                                )
+                            )*+
+                        (?= \g{PPR_qldel} )
+                    )
+                )
+            )
+
+            (?&PPR_quotelike_body_unclosed)
+        ) # End of rule (?<PPR_quotelike_body_always_interpolated_unclosed>)
 
         (?<PPR_quotelike_body_interpolated_unclosed>
             # Start by working out where it actually ends (ignoring interpolations)...
@@ -2794,7 +2917,7 @@ PPR - Pattern-based Perl Recognizer
 
 =head1 VERSION
 
-This document describes PPR version 0.001004
+This document describes PPR version 0.001005
 
 
 =head1 SYNOPSIS
@@ -3012,6 +3135,7 @@ A typical use might therefore be:
         die "Invalid Perl block: " . $PPR::ERROR->source . "\n",
             $PPR::ERROR->origin($linenum, $filename)->diagnostic . "\n";
     }
+
 
 =head2 Decommenting code with C<PPR::decomment()>
 

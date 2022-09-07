@@ -330,3 +330,9 @@ Revision history for PPR
 
     * Fixed edge case of 'state' variable declarations
       (Thanks, Zaki!)
+
+
+0.001005  Tue Sep  6 22:54:34 2022
+
+    * Fixed erroneous non-interpolation of q'...'
+      (Thanks, Zaki!)
