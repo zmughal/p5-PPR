@@ -1678,7 +1678,7 @@ our $GRAMMAR = qr{
         ) # End of rule (?<PPR_balanced_angles>)
 
         (?<PPR_balanced_unicode_delims>
-            (??{$PPR::_qld_not_special})*+
+            (??{"(?:$PPR::_qld_not_special)*+"})
             (?:
                 (?>
                     \\.
@@ -1689,7 +1689,7 @@ our $GRAMMAR = qr{
                 |
                     (?&PPR_newline_and_heredoc)
                 )
-                (??{$PPR::_qld_not_special})*+
+                (??{"(?:$PPR::_qld_not_special)*+"})
             )*+
         ) # End of rule (?<PPR_balanced_unicode_delims>)
 
@@ -1920,7 +1920,7 @@ our $GRAMMAR = qr{
 
 
         (?<PPR_balanced_unicode_delims_regex_interpolated>
-            (??{$PPR::_qld_not_special_or_sigil})*+
+            (??{"(?:$PPR::_qld_not_special_or_sigil)*+"})
             (?:
                 (?>
                     \\.
@@ -1939,7 +1939,7 @@ our $GRAMMAR = qr{
                 |
                     [\$\@]
                 )
-                (??{$PPR::_qld_not_special_or_sigil})*+
+                (??{"(?:$PPR::_qld_not_special_or_sigil)*+"})
             )*+
         ) # End of rule (?<PPR_balanced_unicode_delims_regex_interpolated>)
 
@@ -2005,7 +2005,7 @@ our $GRAMMAR = qr{
         ) # End of rule (?<PPR_balanced_squares_interpolated>)
 
         (?<PPR_balanced_unicode_delims_interpolated>
-            (??{$PPR::_qld_not_special_or_sigil})*+
+            (??{"(?:$PPR::_qld_not_special_or_sigil)*+"})
             (?:
                 (?>
                     \\.
@@ -2022,7 +2022,7 @@ our $GRAMMAR = qr{
                 |
                     [\$\@]
                 )
-                (??{$PPR::_qld_not_special_or_sigil})*+
+                (??{"(?:$PPR::_qld_not_special_or_sigil)*+"})
             )*+
         ) # End of rule (?<PPR_balanced_unicode_delims_interpolated>)
 
