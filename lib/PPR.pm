@@ -15,7 +15,7 @@ BEGIN {
     }
 }
 use warnings;
-our $VERSION = '0.001005';
+our $VERSION = '0.001006';
 use utf8;
 use List::Util qw<min max>;
 
@@ -1678,7 +1678,7 @@ our $GRAMMAR = qr{
         ) # End of rule (?<PPR_balanced_angles>)
 
         (?<PPR_balanced_unicode_delims>
-            (??{$PPR::_qld_not_special})*+
+            (??{$PPR::_qld_not_special})
             (?:
                 (?>
                     \\.
@@ -1689,7 +1689,7 @@ our $GRAMMAR = qr{
                 |
                     (?&PPR_newline_and_heredoc)
                 )
-                (??{$PPR::_qld_not_special})*+
+                (??{$PPR::_qld_not_special})
             )*+
         ) # End of rule (?<PPR_balanced_unicode_delims>)
 
@@ -1723,9 +1723,9 @@ our $GRAMMAR = qr{
                     (?{ local $PPR::_qld_open  = $^N;
                         local $PPR::_qld_close = $PPR::_QLD_CLOSE_FOR{$PPR::_qld_open};
                         local $PPR::_qld_not_special
-                            = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n]";
+                            = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n]*+";
                         local $PPR::_qld_not_special_or_sigil
-                            = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n\\\$\\\@]";
+                            = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n\\\$\\\@]*+";
                         local $PPR::_qld_not_special_in_regex_var
                             = "[^$PPR::_qld_open$PPR::_qld_close\\s(|)]";
                     })
@@ -1785,9 +1785,9 @@ our $GRAMMAR = qr{
                     (?{ local $PPR::_qld_open  = $^N;
                         local $PPR::_qld_close = $PPR::_QLD_CLOSE_FOR{$PPR::_qld_open};
                         local $PPR::_qld_not_special
-                            = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n]";
+                            = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n]*+";
                         local $PPR::_qld_not_special_or_sigil
-                            = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n\\\$\\\@]";
+                            = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n\\\$\\\@]*+";
                         local $PPR::_qld_not_special_in_regex_var
                             = "[^$PPR::_qld_open$PPR::_qld_close\\s(|)]";
                     })
@@ -1920,7 +1920,7 @@ our $GRAMMAR = qr{
 
 
         (?<PPR_balanced_unicode_delims_regex_interpolated>
-            (??{$PPR::_qld_not_special_or_sigil})*+
+            (??{$PPR::_qld_not_special_or_sigil})
             (?:
                 (?>
                     \\.
@@ -1939,7 +1939,7 @@ our $GRAMMAR = qr{
                 |
                     [\$\@]
                 )
-                (??{$PPR::_qld_not_special_or_sigil})*+
+                (??{$PPR::_qld_not_special_or_sigil})
             )*+
         ) # End of rule (?<PPR_balanced_unicode_delims_regex_interpolated>)
 
@@ -2005,7 +2005,7 @@ our $GRAMMAR = qr{
         ) # End of rule (?<PPR_balanced_squares_interpolated>)
 
         (?<PPR_balanced_unicode_delims_interpolated>
-            (??{$PPR::_qld_not_special_or_sigil})*+
+            (??{$PPR::_qld_not_special_or_sigil})
             (?:
                 (?>
                     \\.
@@ -2022,7 +2022,7 @@ our $GRAMMAR = qr{
                 |
                     [\$\@]
                 )
-                (??{$PPR::_qld_not_special_or_sigil})*+
+                (??{$PPR::_qld_not_special_or_sigil})
             )*+
         ) # End of rule (?<PPR_balanced_unicode_delims_interpolated>)
 
@@ -2082,9 +2082,9 @@ our $GRAMMAR = qr{
                         (?{ local $PPR::_qld_open  = $^N;
                             local $PPR::_qld_close = $PPR::_QLD_CLOSE_FOR{$PPR::_qld_open};
                             local $PPR::_qld_not_special
-                                = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n]";
+                                = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n]*+";
                             local $PPR::_qld_not_special_or_sigil
-                                = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n\\\$\\\@]";
+                                = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n\\\$\\\@]*+";
                             local $PPR::_qld_not_special_in_regex_var
                                 = "[^$PPR::_qld_open$PPR::_qld_close\\s(|)]";
                         })
@@ -2208,9 +2208,9 @@ our $GRAMMAR = qr{
                         (?{ local $PPR::_qld_open  = $^N;
                             local $PPR::_qld_close = $PPR::_QLD_CLOSE_FOR{$PPR::_qld_open};
                             local $PPR::_qld_not_special
-                                = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n]";
+                                = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n]*+";
                             local $PPR::_qld_not_special_or_sigil
-                                = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n\\\$\\\@]";
+                                = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n\\\$\\\@]*+";
                             local $PPR::_qld_not_special_in_regex_var
                                 = "[^$PPR::_qld_open$PPR::_qld_close\\s(|)]";
                         })
@@ -2326,9 +2326,9 @@ our $GRAMMAR = qr{
                         (?{ local $PPR::_qld_open  = $^N;
                             local $PPR::_qld_close = $PPR::_QLD_CLOSE_FOR{$PPR::_qld_open};
                             local $PPR::_qld_not_special
-                                = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n]";
+                                = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n]*+";
                             local $PPR::_qld_not_special_or_sigil
-                                = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n\\\$\\\@]";
+                                = "[^$PPR::_qld_open$PPR::_qld_close\\\\\\n\\\$\\\@]*+";
                             local $PPR::_qld_not_special_in_regex_var
                                 = "[^$PPR::_qld_open$PPR::_qld_close\\s(|)]";
                         })
@@ -2917,7 +2917,7 @@ PPR - Pattern-based Perl Recognizer
 
 =head1 VERSION
 
-This document describes PPR version 0.001005
+This document describes PPR version 0.001006
 
 
 =head1 SYNOPSIS
@@ -4331,6 +4331,14 @@ re-entrancy and safe lexical scoping).
 
 The C<decomment()> subroutine trips a separate regex engine bug in Perl
 5.14 only and will not run under that version.
+
+There was a lingering bug in regex re-interpolation between Perl 5.18 and 5.28,
+which means that interpolating a PPR grammar (or any other precompiled regex
+that uses the C<(??{...})> construct) into another regex sometimes does not work.
+In these cases, the spurious error message generated is usually:
+S<I<Sequence (?_...) not recognized>>. This problem is unlikely ever to be
+resolved, as those versions of Perl are no longer being maintained. The
+only known workaround is to upgrade to Perl 5.30 or later.
 
 There are also constructs in Perl 5 which cannot be parsed without
 actually executing some code...which the regex does not attempt to
